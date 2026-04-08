@@ -29,7 +29,7 @@
                     <option value="0">JNO</option>
                 </field>
                 <field name="api_key" type="text" label="PLG_SYSTEM_PERFBASE_API_KEY_LABEL" description="PLG_SYSTEM_PERFBASE_API_KEY_DESC" />
-                <field name="api_url" type="url" default="https://receiver.perfbase.com" label="PLG_SYSTEM_PERFBASE_API_URL_LABEL" description="PLG_SYSTEM_PERFBASE_API_URL_DESC" />
+                <field name="api_url" type="url" default="https://ingress.perfbase.cloud" label="PLG_SYSTEM_PERFBASE_API_URL_LABEL" description="PLG_SYSTEM_PERFBASE_API_URL_DESC" />
                 <field name="sample_rate" type="number" min="0" max="1" step="0.01" default="0.1" label="PLG_SYSTEM_PERFBASE_SAMPLE_RATE_LABEL" description="PLG_SYSTEM_PERFBASE_SAMPLE_RATE_DESC" />
                 <field name="timeout" type="number" min="1" step="1" default="5" label="PLG_SYSTEM_PERFBASE_TIMEOUT_LABEL" description="PLG_SYSTEM_PERFBASE_TIMEOUT_DESC" />
                 <field name="proxy" type="text" label="PLG_SYSTEM_PERFBASE_PROXY_LABEL" description="PLG_SYSTEM_PERFBASE_PROXY_DESC" />

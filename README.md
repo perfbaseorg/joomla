@@ -105,7 +105,7 @@ The plugin configuration UI is defined in [`perfbase.xml`](/Users/ben/Projects/P
 |---------|---------|-------------|
 | `enabled` | `false` | Master switch for profiling |
 | `api_key` | empty | Required Perfbase project API key |
-| `api_url` | `https://receiver.perfbase.com` | Perfbase receiver URL |
+| `api_url` | `https://ingress.perfbase.cloud` | Perfbase receiver URL |
 | `sample_rate` | `0.1` | Fraction of requests and commands to profile |
 | `timeout` | `5` | SDK request timeout in seconds |
 | `proxy` | empty | Optional proxy URL |

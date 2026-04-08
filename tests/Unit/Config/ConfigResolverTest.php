@@ -38,7 +38,7 @@ class ConfigResolverTest extends TestCase
         $config = $resolver->resolve();
 
         self::assertFalse($config['enabled']);
-        self::assertSame('https://receiver.perfbase.com', $config['api_url']);
+        self::assertSame('https://ingress.perfbase.cloud', $config['api_url']);
         self::assertSame(0.1, $config['sample_rate']);
         self::assertSame(['*'], $config['include']['http']);
         self::assertSame(['*'], $config['include']['console']);
@@ -93,7 +93,7 @@ class ConfigResolverTest extends TestCase
         $errors = $resolver->validate([
             'enabled' => true,
             'api_key' => 'test-key',
-            'api_url' => 'https://receiver.perfbase.com',
+            'api_url' => 'https://ingress.perfbase.cloud',
             'sample_rate' => 0.5,
             'timeout' => 5,
             'flags' => FeatureFlags::DefaultFlags,
@@ -125,7 +125,7 @@ class ConfigResolverTest extends TestCase
 
         self::assertTrue($resolver->isEnabled($config));
         self::assertSame('test-key', $sdkConfig->api_key);
-        self::assertSame('https://receiver.perfbase.com', $sdkConfig->api_url);
+        self::assertSame('https://ingress.perfbase.cloud', $sdkConfig->api_url);
         self::assertNull($sdkConfig->proxy);
         self::assertSame(7, $sdkConfig->timeout);
         self::assertFalse($resolver->isEnabled(['enabled' => true, 'api_key' => '']));
