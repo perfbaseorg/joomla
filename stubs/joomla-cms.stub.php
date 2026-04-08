@@ -18,9 +18,10 @@ interface PluginInterface
 
 namespace Joomla\CMS\Plugin;
 
+use Joomla\CMS\Extension\PluginInterface;
 use Joomla\Event\DispatcherInterface;
 
-class CMSPlugin
+class CMSPlugin implements PluginInterface
 {
     protected object $application;
 
