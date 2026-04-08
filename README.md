@@ -1,8 +1,23 @@
-# Perfbase for Joomla
+<p align="center">
+  <a href="https://perfbase.com">
+    <img src="https://cdn.perfbase.com/img/logo-full.svg" alt="Perfbase" width="300">
+  </a>
+</p>
 
-Perfbase integration for Joomla via a Joomla system plugin.
+<h3 align="center">Perfbase for Joomla</h3>
+<p align="center">
+  Joomla integration for <a href="https://perfbase.com">Perfbase</a>.
+</p>
 
-`perfbase/joomla` is a thin framework adapter over `perfbase/php-sdk`. It connects Joomla request and console lifecycle events to the Perfbase SDK while leaving extension interaction, payload construction, and submission inside the SDK.
+<p align="center">
+  <a href="https://packagist.org/packages/perfbase/joomla"><img src="https://img.shields.io/packagist/v/perfbase/joomla" alt="Packagist Version"></a>
+  <a href="https://github.com/perfbaseorg/joomla/blob/main/LICENSE.txt"><img src="https://img.shields.io/packagist/l/perfbase/joomla" alt="License"></a>
+  <a href="https://github.com/perfbaseorg/joomla/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/perfbaseorg/joomla/ci.yml?branch=main" alt="CI"></a>
+  <img src="https://img.shields.io/badge/php-8.1%2B-blue" alt="PHP Version">
+  <img src="https://img.shields.io/badge/joomla-4.4--5.x-blue" alt="Joomla Version">
+</p>
+
+This package is a thin adapter over [`perfbase/php-sdk`](https://packagist.org/packages/perfbase/php-sdk). It connects Joomla request and console lifecycle events to the Perfbase SDK while leaving extension interaction, payload construction, and submission to the shared SDK.
 
 ## Support Matrix
 
@@ -267,6 +282,14 @@ Important files:
 - [`tests/`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests)
 - [`ci.yml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/.github/workflows/ci.yml)
 
+## Documentation
+
+Full documentation is available at [perfbase.com/docs](https://perfbase.com/docs).
+
+- **Docs**: [perfbase.com/docs](https://perfbase.com/docs)
+- **Issues**: [github.com/perfbaseorg/joomla/issues](https://github.com/perfbaseorg/joomla/issues)
+- **Support**: [support@perfbase.com](mailto:support@perfbase.com)
+
 ## License
 
-Apache-2.0
+Apache-2.0. See [LICENSE.txt](LICENSE.txt).
