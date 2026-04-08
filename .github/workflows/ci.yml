@@ -71,7 +71,15 @@ jobs:
         run: |
           mkdir -p /tmp/joomla-host
           composer init --working-dir=/tmp/joomla-host --name=perfbase/joomla-host --no-interaction
-          composer require --working-dir=/tmp/joomla-host --no-interaction --prefer-dist joomla/cms:${{ matrix.joomla-versions }}
+          composer require --working-dir=/tmp/joomla-host --no-interaction --prefer-dist \
+            joomla/di:"${{ matrix.joomla-versions == '^4.4' && '^2.0' || '^3.0' }}" \
+            joomla/event:"${{ matrix.joomla-versions == '^4.4' && '^2.0' || '^3.0' }}"
+          cp stubs/joomla-cms.stub.php /tmp/joomla-host/joomla-cms-stubs.php
+          cd /tmp/joomla-host && php -r '
+            $json = json_decode(file_get_contents("composer.json"), true);
+            $json["autoload"]["files"] = ["joomla-cms-stubs.php"];
+            file_put_contents("composer.json", json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+          ' && composer dump-autoload
 
       - name: Run Joomla HTTP host smoke test
         run: php tests/Host/joomla-smoke.php /tmp/joomla-host/vendor/autoload.php vendor/autoload.php http
