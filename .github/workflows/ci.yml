@@ -1,0 +1,80 @@
+name: PHP CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  php-tests:
+    name: PHPStan and PHPUnit on PHP ${{ matrix.php-versions }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-versions: ['8.1']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php-versions }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate package metadata
+        run: composer validate --no-check-publish
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress src
+
+      - name: Run PHPUnit
+        run: composer run test
+
+  joomla-host-smoke:
+    name: Joomla host smoke on PHP ${{ matrix.php-versions }} and Joomla ${{ matrix.joomla-versions }}
+    runs-on: ubuntu-latest
+    needs: php-tests
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php-versions: '8.1'
+            joomla-versions: '^4.4'
+          - php-versions: '8.1'
+            joomla-versions: '^5.0'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php-versions }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Install plugin dev dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Joomla host packages
+        run: |
+          mkdir -p /tmp/joomla-host
+          composer init --working-dir=/tmp/joomla-host --name=perfbase/joomla-host --no-interaction
+          composer require --working-dir=/tmp/joomla-host --no-interaction --prefer-dist joomla/cms:${{ matrix.joomla-versions }}
+
+      - name: Run Joomla HTTP host smoke test
+        run: php tests/Host/joomla-smoke.php /tmp/joomla-host/vendor/autoload.php vendor/autoload.php http
+
+      - name: Run Joomla CLI host smoke test
+        run: php tests/Host/joomla-smoke.php /tmp/joomla-host/vendor/autoload.php vendor/autoload.php cli

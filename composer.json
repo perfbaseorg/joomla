@@ -1,0 +1,57 @@
+{
+  "name": "perfbase/joomla",
+  "description": "Joomla system plugin integration for the Perfbase APM platform",
+  "keywords": [
+    "perfbase",
+    "joomla",
+    "profiling",
+    "apm",
+    "monitoring"
+  ],
+  "homepage": "https://github.com/perfbaseorg/joomla",
+  "support": {
+    "issues": "https://github.com/perfbaseorg/joomla/issues",
+    "source": "https://github.com/perfbaseorg/joomla"
+  },
+  "type": "joomla-plugin",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Ben Poulson",
+      "email": "ben.poulson@perfbase.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.1 <9.0",
+    "ext-json": "*",
+    "perfbase/php-sdk": "^1.0.0"
+  },
+  "suggest": {
+    "joomla/cms": "Required at runtime when the plugin is installed into a Joomla 4.4 or 5.x application."
+  },
+  "require-dev": {
+    "mockery/mockery": "^1.6",
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^10.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Perfbase\\Plugin\\System\\Perfbase\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Perfbase\\Plugin\\System\\Perfbase\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "lint": "composer run-script phpstan && composer run-script test",
+    "phpstan": "phpstan analyse --memory-limit=2G",
+    "test": "phpunit --coverage-text"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "config": {
+    "sort-packages": true
+  }
+}

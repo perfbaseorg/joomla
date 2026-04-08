@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>plg_system_perfbase</name>
+    <author>Perfbase</author>
+    <creationDate>2026-04-07</creationDate>
+    <copyright>(C) Perfbase</copyright>
+    <license>Apache-2.0</license>
+    <version>1.0.0</version>
+    <description>PLG_SYSTEM_PERFBASE_XML_DESCRIPTION</description>
+    <targetplatform name="joomla" version="((4\.4)|(5\.[0-9]+))" />
+    <namespace path="src">Perfbase\Plugin\System\Perfbase</namespace>
+
+    <files>
+        <folder plugin="perfbase">services</folder>
+        <folder>src</folder>
+        <folder>language</folder>
+    </files>
+
+    <languages folder="language">
+        <language tag="en-GB">en-GB/plg_system_perfbase.ini</language>
+        <language tag="en-GB">en-GB/plg_system_perfbase.sys.ini</language>
+    </languages>
+
+    <config>
+        <fields name="params">
+            <fieldset name="basic" label="PLG_SYSTEM_PERFBASE_FIELDSET_BASIC">
+                <field name="enabled" type="radio" default="0" label="PLG_SYSTEM_PERFBASE_ENABLED_LABEL" description="PLG_SYSTEM_PERFBASE_ENABLED_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="api_key" type="text" label="PLG_SYSTEM_PERFBASE_API_KEY_LABEL" description="PLG_SYSTEM_PERFBASE_API_KEY_DESC" />
+                <field name="api_url" type="url" default="https://receiver.perfbase.com" label="PLG_SYSTEM_PERFBASE_API_URL_LABEL" description="PLG_SYSTEM_PERFBASE_API_URL_DESC" />
+                <field name="sample_rate" type="number" min="0" max="1" step="0.01" default="0.1" label="PLG_SYSTEM_PERFBASE_SAMPLE_RATE_LABEL" description="PLG_SYSTEM_PERFBASE_SAMPLE_RATE_DESC" />
+                <field name="timeout" type="number" min="1" step="1" default="5" label="PLG_SYSTEM_PERFBASE_TIMEOUT_LABEL" description="PLG_SYSTEM_PERFBASE_TIMEOUT_DESC" />
+                <field name="proxy" type="text" label="PLG_SYSTEM_PERFBASE_PROXY_LABEL" description="PLG_SYSTEM_PERFBASE_PROXY_DESC" />
+                <field name="flags" type="number" min="0" step="1" default="8145" label="PLG_SYSTEM_PERFBASE_FLAGS_LABEL" description="PLG_SYSTEM_PERFBASE_FLAGS_DESC" />
+            </fieldset>
+
+            <fieldset name="contexts" label="PLG_SYSTEM_PERFBASE_FIELDSET_CONTEXTS">
+                <field name="profile_admin" type="radio" default="0" label="PLG_SYSTEM_PERFBASE_PROFILE_ADMIN_LABEL" description="PLG_SYSTEM_PERFBASE_PROFILE_ADMIN_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="environment" type="text" label="PLG_SYSTEM_PERFBASE_ENVIRONMENT_LABEL" description="PLG_SYSTEM_PERFBASE_ENVIRONMENT_DESC" />
+                <field name="app_version" type="text" label="PLG_SYSTEM_PERFBASE_APP_VERSION_LABEL" description="PLG_SYSTEM_PERFBASE_APP_VERSION_DESC" />
+                <field name="include_http" type="textarea" rows="5" default="*" label="PLG_SYSTEM_PERFBASE_INCLUDE_HTTP_LABEL" description="PLG_SYSTEM_PERFBASE_INCLUDE_HTTP_DESC" />
+                <field name="exclude_http" type="textarea" rows="5" label="PLG_SYSTEM_PERFBASE_EXCLUDE_HTTP_LABEL" description="PLG_SYSTEM_PERFBASE_EXCLUDE_HTTP_DESC" />
+                <field name="include_console" type="textarea" rows="5" default="*" label="PLG_SYSTEM_PERFBASE_INCLUDE_CONSOLE_LABEL" description="PLG_SYSTEM_PERFBASE_INCLUDE_CONSOLE_DESC" />
+                <field name="exclude_console" type="textarea" rows="5" label="PLG_SYSTEM_PERFBASE_EXCLUDE_CONSOLE_LABEL" description="PLG_SYSTEM_PERFBASE_EXCLUDE_CONSOLE_DESC" />
+            </fieldset>
+
+            <fieldset name="debug" label="PLG_SYSTEM_PERFBASE_FIELDSET_DEBUG">
+                <field name="debug" type="radio" default="0" label="PLG_SYSTEM_PERFBASE_DEBUG_LABEL" description="PLG_SYSTEM_PERFBASE_DEBUG_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="log_errors" type="radio" default="1" label="PLG_SYSTEM_PERFBASE_LOG_ERRORS_LABEL" description="PLG_SYSTEM_PERFBASE_LOG_ERRORS_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>

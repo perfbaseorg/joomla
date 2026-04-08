@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    bootstrapFiles:
+        - vendor/autoload.php
+        - stubs/joomla.stub.php
+    scanFiles:
+        - stubs/joomla.stub.php
+
+    treatPhpDocTypesAsCertain: true
