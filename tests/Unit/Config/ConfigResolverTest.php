@@ -124,10 +124,18 @@ class ConfigResolverTest extends TestCase
         $sdkConfig = $resolver->buildSdkConfig($config);
 
         self::assertTrue($resolver->isEnabled($config));
-        self::assertSame('test-key', $sdkConfig->api_key);
-        self::assertSame('https://ingress.perfbase.cloud', $sdkConfig->api_url);
-        self::assertNull($sdkConfig->proxy);
-        self::assertSame(7, $sdkConfig->timeout);
+        self::assertSame('test-key', $this->readSdkConfigValue($sdkConfig, 'api_key'));
+        self::assertSame('https://ingress.perfbase.cloud', $this->readSdkConfigValue($sdkConfig, 'api_url'));
+        self::assertNull($this->readSdkConfigValue($sdkConfig, 'proxy'));
+        self::assertSame(7, $this->readSdkConfigValue($sdkConfig, 'timeout'));
         self::assertFalse($resolver->isEnabled(['enabled' => true, 'api_key' => '']));
+    }
+
+    private function readSdkConfigValue(object $sdkConfig, string $property): mixed
+    {
+        $reflection = new \ReflectionProperty($sdkConfig, $property);
+        $reflection->setAccessible(true);
+
+        return $reflection->getValue($sdkConfig);
     }
 }
