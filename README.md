@@ -41,7 +41,7 @@ This package does not currently provide:
 
 - Dedicated Joomla scheduler or task lifecycles
 - Deep component or template execution timelines beyond the main trace span
-- Browser-level end-to-end instrumentation tests inside full Joomla applications
+- End-to-end instrumentation tests inside full Joomla application installs
 
 ## Features
 
@@ -250,11 +250,14 @@ Key class coverage:
 
 CI coverage includes:
 
-- supported PHP versions
+- the supported PHP baseline
 - PHPUnit
 - PHPStan
-- Joomla host smoke tests for Joomla `4.4` and `5.x`
-- both HTTP and CLI host smoke paths via [`tests/Host/joomla-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/joomla-smoke.php)
+- Joomla framework-package smoke checks for the supported `4.4` and `5.x` dependency lines
+- both HTTP and CLI smoke paths via [`tests/Host/joomla-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/joomla-smoke.php)
+- local CMS stubs layered on top of `joomla/di` and `joomla/event`
+
+The smoke job is not a full `joomla/cms` application install. It validates adapter compatibility against the supported Joomla framework-package lines plus local CMS stubs.
 
 Commands used during development:
 

@@ -133,6 +133,10 @@ class PerfbasePlugin extends CMSPlugin
         $this->booted = true;
         $this->config = $this->configResolver->resolve($this->readPluginParams());
 
+        if (!$this->configResolver->isEnabled($this->config)) {
+            return;
+        }
+
         foreach ($this->configResolver->validate($this->config) as $field => $message) {
             $this->handleProfilingError(
                 new \RuntimeException(sprintf('Invalid config for %s: %s', $field, $message)),
@@ -141,7 +145,7 @@ class PerfbasePlugin extends CMSPlugin
             );
         }
 
-        if (!$this->configResolver->isEnabled($this->config) || $this->perfbase !== null) {
+        if ($this->perfbase !== null) {
             return;
         }
 

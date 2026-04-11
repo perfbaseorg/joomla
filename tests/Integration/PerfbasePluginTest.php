@@ -47,6 +47,49 @@ class PerfbasePluginTest extends TestCase
         self::assertNull($plugin->getActiveLifecycle());
     }
 
+    public function test_disabled_plugin_skips_invalid_config_without_throwing_or_logging(): void
+    {
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => false,
+                    'debug' => true,
+                    'api_url' => 'not-a-valid-url',
+                ]);
+            }
+        };
+
+        $plugin = new class($dispatcher, [], $resolver, null) extends PerfbasePlugin {
+            /** @var list<string> */
+            public array $loggedErrors = [];
+
+            public function injectApplication(object $application): void
+            {
+                $this->application = $application;
+            }
+
+            protected function logProfilingError(string $message): void
+            {
+                $this->loggedErrors[] = $message;
+            }
+        };
+
+        $plugin->injectApplication(new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        });
+
+        $plugin->onAfterInitialise();
+
+        self::assertSame([], $plugin->loggedErrors);
+        self::assertNull($plugin->getPerfbase());
+        self::assertNull($plugin->getActiveLifecycle());
+    }
+
     public function test_http_request_runs_start_and_stop_once(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';
@@ -232,6 +275,63 @@ class PerfbasePluginTest extends TestCase
         self::assertNull($plugin->getPerfbase());
         self::assertNotNull($plugin->getActiveLifecycle());
         self::assertFalse($plugin->getActiveLifecycle()->isStarted());
+    }
+
+    public function test_invalid_config_rethrows_in_debug_mode_during_boot(): void
+    {
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => true,
+                    'api_key' => 'test-key',
+                    'debug' => true,
+                    'api_url' => 'not-a-valid-url',
+                ]);
+            }
+        };
+
+        $plugin = new PerfbasePlugin($dispatcher, [], $resolver, null);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Invalid config for api_url: Invalid API URL');
+
+        $plugin->onAfterInitialise();
+    }
+
+    public function test_invalid_config_logs_and_skips_sdk_initialization_in_production_mode(): void
+    {
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => true,
+                    'api_key' => 'test-key',
+                    'debug' => false,
+                    'log_errors' => true,
+                    'api_url' => 'not-a-valid-url',
+                ]);
+            }
+        };
+
+        $plugin = new class($dispatcher, [], $resolver, null) extends PerfbasePlugin {
+            /** @var list<string> */
+            public array $loggedErrors = [];
+
+            protected function logProfilingError(string $message): void
+            {
+                $this->loggedErrors[] = $message;
+            }
+        };
+
+        $plugin->onAfterInitialise();
+
+        self::assertCount(2, $plugin->loggedErrors);
+        self::assertStringContainsString('Invalid config for api_url: Invalid API URL', $plugin->loggedErrors[0]);
+        self::assertStringContainsString('API URL is not valid', $plugin->loggedErrors[1]);
+        self::assertNull($plugin->getPerfbase());
     }
 
     public function test_repeated_initialise_and_shutdown_are_idempotent(): void

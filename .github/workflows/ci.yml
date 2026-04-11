@@ -39,8 +39,8 @@ jobs:
       - name: Run PHPUnit
         run: composer run test
 
-  joomla-host-smoke:
-    name: Joomla host smoke on PHP ${{ matrix.php-versions }} and Joomla ${{ matrix.joomla-versions }}
+  joomla-framework-smoke:
+    name: Joomla framework-package smoke on PHP ${{ matrix.php-versions }} and Joomla ${{ matrix.joomla-versions }}
     runs-on: ubuntu-latest
     needs: php-tests
 
@@ -67,7 +67,7 @@ jobs:
       - name: Install plugin dev dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Install Joomla host packages
+      - name: Install Joomla framework packages and local CMS stubs
         run: |
           mkdir -p /tmp/joomla-host
           composer init --working-dir=/tmp/joomla-host --name=perfbase/joomla-host --no-interaction
@@ -81,8 +81,8 @@ jobs:
             file_put_contents("composer.json", json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
           ' && composer dump-autoload
 
-      - name: Run Joomla HTTP host smoke test
+      - name: Run Joomla HTTP framework-package smoke test
         run: php tests/Host/joomla-smoke.php /tmp/joomla-host/vendor/autoload.php vendor/autoload.php http
 
-      - name: Run Joomla CLI host smoke test
+      - name: Run Joomla CLI framework-package smoke test
         run: php tests/Host/joomla-smoke.php /tmp/joomla-host/vendor/autoload.php vendor/autoload.php cli
