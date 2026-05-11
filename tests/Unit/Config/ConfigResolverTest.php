@@ -40,10 +40,43 @@ class ConfigResolverTest extends TestCase
         self::assertFalse($config['enabled']);
         self::assertSame('https://ingress.perfbase.cloud', $config['api_url']);
         self::assertSame(0.1, $config['sample_rate']);
+        self::assertSame([...range(200, 299), ...range(500, 599)], $config['profile_http_status_codes']);
         self::assertSame(['*'], $config['include']['http']);
         self::assertSame(['*'], $config['include']['console']);
         self::assertSame([], $config['exclude']['http']);
         self::assertSame(FeatureFlags::DefaultFlags, $config['flags']);
+    }
+
+    public function test_resolve_normalizes_profile_http_status_codes(): void
+    {
+        $resolver = new ConfigResolver();
+        $config = $resolver->resolve([
+            'profile_http_status_codes' => "200, 201\n204-205",
+        ]);
+
+        self::assertSame([200, 201, 204, 205], $config['profile_http_status_codes']);
+    }
+
+    public function test_resolve_uses_2xx_and_5xx_http_status_code_defaults(): void
+    {
+        $resolver = new ConfigResolver();
+        $config = $resolver->resolve();
+
+        self::assertContains(200, $config['profile_http_status_codes']);
+        self::assertContains(299, $config['profile_http_status_codes']);
+        self::assertContains(500, $config['profile_http_status_codes']);
+        self::assertContains(599, $config['profile_http_status_codes']);
+        self::assertNotContains(404, $config['profile_http_status_codes']);
+    }
+
+    public function test_resolve_allows_empty_http_status_code_list_to_disable_submission(): void
+    {
+        $resolver = new ConfigResolver();
+        $config = $resolver->resolve([
+            'profile_http_status_codes' => '',
+        ]);
+
+        self::assertSame([], $config['profile_http_status_codes']);
     }
 
     public function test_resolve_normalizes_flat_params_to_nested_filter_config(): void
@@ -75,6 +108,7 @@ class ConfigResolverTest extends TestCase
             'api_key' => '',
             'api_url' => 'not-a-url',
             'sample_rate' => 1.5,
+            'profile_http_status_codes' => [99, 600],
             'timeout' => 0,
             'flags' => FeatureFlags::AllFlags + 1,
         ]);
@@ -82,6 +116,8 @@ class ConfigResolverTest extends TestCase
         self::assertArrayHasKey('api_key', $errors);
         self::assertArrayHasKey('api_url', $errors);
         self::assertArrayHasKey('sample_rate', $errors);
+        self::assertArrayHasKey('profile_http_status_codes.0', $errors);
+        self::assertArrayHasKey('profile_http_status_codes.1', $errors);
         self::assertArrayHasKey('timeout', $errors);
         self::assertArrayHasKey('flags', $errors);
     }

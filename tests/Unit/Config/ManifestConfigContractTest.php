@@ -31,6 +31,7 @@ class ManifestConfigContractTest extends TestCase
             'proxy',
             'flags',
             'profile_admin',
+            'profile_http_status_codes',
             'environment',
             'app_version',
             'include_http',
@@ -55,6 +56,8 @@ class ManifestConfigContractTest extends TestCase
         self::assertSame('', $fields['proxy']);
         self::assertSame((string) FeatureFlags::DefaultFlags, $fields['flags']);
         self::assertSame('0', $fields['profile_admin']);
+        self::assertSame('200-299,500-599', $fields['profile_http_status_codes']);
+        self::assertSame([...range(200, 299), ...range(500, 599)], $defaults['profile_http_status_codes']);
         self::assertSame($defaults['environment'], $fields['environment']);
         self::assertSame($defaults['app_version'], $fields['app_version']);
         self::assertSame('*', $fields['include_http']);

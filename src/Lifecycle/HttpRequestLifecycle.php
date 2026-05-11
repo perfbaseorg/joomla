@@ -23,6 +23,8 @@ class HttpRequestLifecycle extends AbstractJoomlaProfiler
 
     private string $task;
 
+    private ?int $responseStatusCode = null;
+
     public function __construct(object $application, ?Perfbase $perfbase, array $config)
     {
         $this->application = $application;
@@ -117,8 +119,22 @@ class HttpRequestLifecycle extends AbstractJoomlaProfiler
         $statusCode = http_response_code();
 
         if (is_int($statusCode) && $statusCode > 0) {
+            $this->responseStatusCode = $statusCode;
             $this->setAttribute('http_status_code', (string) $statusCode);
         }
+    }
+
+    protected function shouldSubmitTrace(): bool
+    {
+        if ($this->responseStatusCode === null) {
+            return true;
+        }
+
+        return in_array(
+            $this->responseStatusCode,
+            $this->config['profile_http_status_codes'] ?? [...range(200, 299), ...range(500, 599)],
+            true
+        );
     }
 
     /**

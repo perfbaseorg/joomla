@@ -20,6 +20,7 @@ class ConfigResolver
             'api_key' => trim((string) ($params['api_key'] ?? '')),
             'api_url' => trim((string) ($params['api_url'] ?? 'https://ingress.perfbase.cloud')),
             'sample_rate' => $this->clampFloat((float) ($params['sample_rate'] ?? 0.1), 0.0, 1.0),
+            'profile_http_status_codes' => $this->parseStatusCodeList($params['profile_http_status_codes'] ?? '200-299,500-599'),
             'flags' => (int) ($params['flags'] ?? FeatureFlags::DefaultFlags),
             'timeout' => (int) ($params['timeout'] ?? 5),
             'proxy' => trim((string) ($params['proxy'] ?? '')),
@@ -53,6 +54,7 @@ class ConfigResolver
             'api_key' => '',
             'api_url' => 'https://ingress.perfbase.cloud',
             'sample_rate' => 0.1,
+            'profile_http_status_codes' => [...range(200, 299), ...range(500, 599)],
             'flags' => FeatureFlags::DefaultFlags,
             'timeout' => 5,
             'proxy' => '',
@@ -90,6 +92,19 @@ class ConfigResolver
 
         if ($sampleRate < 0.0 || $sampleRate > 1.0) {
             $errors['sample_rate'] = 'Sample rate must be between 0.0 and 1.0';
+        }
+
+        $statusCodes = $config['profile_http_status_codes'] ?? [];
+
+        if (!is_array($statusCodes)) {
+            $errors['profile_http_status_codes'] = 'HTTP status codes must be a list';
+        } else {
+            foreach ($statusCodes as $index => $statusCode) {
+                if (!is_int($statusCode) || $statusCode < 100 || $statusCode > 599) {
+                    $errors[sprintf('profile_http_status_codes.%s', (string) $index)] =
+                        'HTTP status codes must be integers between 100 and 599';
+                }
+            }
         }
 
         $timeout = (int) ($config['timeout'] ?? 0);
@@ -182,6 +197,60 @@ class ConfigResolver
         $items = array_values(array_filter(array_map('trim', $items), static fn (string $item): bool => $item !== ''));
 
         return $items !== [] ? $items : $default;
+    }
+
+    /**
+     * @param mixed $value
+     * @return array<int, int|string>
+     */
+    private function parseStatusCodeList($value): array
+    {
+        if ($value === null) {
+            return [...range(200, 299), ...range(500, 599)];
+        }
+
+        if (is_array($value)) {
+            $items = $value;
+        } else {
+            $items = preg_split('/[\r\n,]+/', (string) $value) ?: [];
+        }
+
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (is_int($item)) {
+                $normalized[] = $item;
+                continue;
+            }
+
+            $item = trim((string) $item);
+
+            if ($item === '') {
+                continue;
+            }
+
+            if (ctype_digit($item)) {
+                $normalized[] = (int) $item;
+                continue;
+            }
+
+            if (preg_match('/^(\d{3})\s*-\s*(\d{3})$/', $item, $matches) === 1) {
+                $start = (int) $matches[1];
+                $end = (int) $matches[2];
+
+                if ($start <= $end) {
+                    foreach (range($start, $end) as $statusCode) {
+                        $normalized[] = $statusCode;
+                    }
+
+                    continue;
+                }
+            }
+
+            $normalized[] = $item;
+        }
+
+        return array_values(array_unique($normalized, SORT_REGULAR));
     }
 
     private function clampFloat(float $value, float $min, float $max): float

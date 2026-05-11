@@ -188,6 +188,32 @@ class AbstractJoomlaProfilerTest extends TestCase
         self::assertTrue($failedStopProfiler->isStarted());
     }
 
+    public function test_stop_resets_without_submitting_when_trace_should_be_dropped(): void
+    {
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->never();
+        $perfbase->shouldReceive('reset')->once();
+
+        $profiler = new class('test.span', $perfbase, ['sample_rate' => 1.0]) extends AbstractJoomlaProfiler {
+            protected function shouldProfile(): bool
+            {
+                return true;
+            }
+
+            protected function shouldSubmitTrace(): bool
+            {
+                return false;
+            }
+        };
+
+        $profiler->startProfiling();
+        $profiler->stopProfiling();
+
+        self::assertTrue($profiler->isStarted());
+    }
+
     public function test_start_is_idempotent_and_cannot_restart_after_stop(): void
     {
         $perfbase = MockFactory::createPerfbase();

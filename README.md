@@ -116,6 +116,7 @@ The plugin configuration UI is defined in [`perfbase.xml`](/Users/ben/Projects/P
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `profile_admin` | `false` | Include administrator requests |
+| `profile_http_status_codes` | `200-299,500-599` | HTTP status codes that should be submitted |
 | `environment` | empty | Optional environment override |
 | `app_version` | empty | Optional application-version override |
 | `include_http` | `*` | Newline-separated HTTP include filters |
@@ -157,6 +158,8 @@ database:*
 
 Filters are matched against normalized identifiers rather than raw query-heavy URLs.
 
+`profile_http_status_codes` accepts comma-separated values, newline-separated values, and ranges such as `200-299,500-599` or `200,201,404`. The runtime config is normalized to an integer allowlist. Leave it blank if you want to disable HTTP trace submission entirely.
+
 ## Runtime Behavior
 
 ### HTTP
@@ -178,6 +181,8 @@ Examples:
 
 - `GET com_content:article:display`
 - `POST /users/{id}`
+
+By default, 2xx and 5xx HTTP responses are submitted. A 404 will still be profiled in-process, but the trace is discarded unless `profile_http_status_codes` includes `404`.
 
 ### CLI
 

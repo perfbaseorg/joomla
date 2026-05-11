@@ -114,6 +114,109 @@ class HttpRequestLifecycleTest extends TestCase
         self::assertSame('204', $lifecycle->getAttributes()['http_status_code']);
     }
 
+    public function test_http_lifecycle_skips_submission_for_disallowed_status_code_by_default(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/missing';
+
+        $app = new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        };
+
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->never();
+        $perfbase->shouldReceive('reset')->once();
+
+        $lifecycle = new HttpRequestLifecycle($app, $perfbase, [
+            'enabled' => true,
+            'profile_admin' => false,
+            'sample_rate' => 1.0,
+            'profile_http_status_codes' => range(200, 299),
+            'include' => ['http' => ['*']],
+            'exclude' => ['http' => []],
+        ]);
+
+        $lifecycle->startProfiling();
+        http_response_code(404);
+        $lifecycle->addFinalAttributes();
+        $lifecycle->stopProfiling();
+
+        self::assertSame('404', $lifecycle->getAttributes()['http_status_code']);
+    }
+
+    public function test_http_lifecycle_submits_for_default_server_error_status_code(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/error';
+
+        $app = new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        };
+
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->once()->andReturn(\Perfbase\SDK\SubmitResult::success());
+
+        $lifecycle = new HttpRequestLifecycle($app, $perfbase, [
+            'enabled' => true,
+            'profile_admin' => false,
+            'sample_rate' => 1.0,
+            'profile_http_status_codes' => [...range(200, 299), ...range(500, 599)],
+            'include' => ['http' => ['*']],
+            'exclude' => ['http' => []],
+        ]);
+
+        $lifecycle->startProfiling();
+        http_response_code(503);
+        $lifecycle->addFinalAttributes();
+        $lifecycle->stopProfiling();
+
+        self::assertSame('503', $lifecycle->getAttributes()['http_status_code']);
+    }
+
+    public function test_http_lifecycle_submits_for_custom_allowed_status_code(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/missing';
+
+        $app = new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        };
+
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->once()->andReturn(\Perfbase\SDK\SubmitResult::success());
+
+        $lifecycle = new HttpRequestLifecycle($app, $perfbase, [
+            'enabled' => true,
+            'profile_admin' => false,
+            'sample_rate' => 1.0,
+            'profile_http_status_codes' => [200, 404],
+            'include' => ['http' => ['*']],
+            'exclude' => ['http' => []],
+        ]);
+
+        $lifecycle->startProfiling();
+        http_response_code(404);
+        $lifecycle->addFinalAttributes();
+        $lifecycle->stopProfiling();
+
+        self::assertSame('404', $lifecycle->getAttributes()['http_status_code']);
+    }
+
     public function test_extension_unavailable_and_excluded_filters_skip_profiling(): void
     {
         $_SERVER['REQUEST_METHOD'] = 'GET';

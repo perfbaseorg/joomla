@@ -41,6 +41,7 @@
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>
+                <field name="profile_http_status_codes" type="text" default="200-299,500-599" label="PLG_SYSTEM_PERFBASE_PROFILE_HTTP_STATUS_CODES_LABEL" description="PLG_SYSTEM_PERFBASE_PROFILE_HTTP_STATUS_CODES_DESC" />
                 <field name="environment" type="text" label="PLG_SYSTEM_PERFBASE_ENVIRONMENT_LABEL" description="PLG_SYSTEM_PERFBASE_ENVIRONMENT_DESC" />
                 <field name="app_version" type="text" label="PLG_SYSTEM_PERFBASE_APP_VERSION_LABEL" description="PLG_SYSTEM_PERFBASE_APP_VERSION_DESC" />
                 <field name="include_http" type="textarea" rows="5" default="*" label="PLG_SYSTEM_PERFBASE_INCLUDE_HTTP_LABEL" description="PLG_SYSTEM_PERFBASE_INCLUDE_HTTP_DESC" />

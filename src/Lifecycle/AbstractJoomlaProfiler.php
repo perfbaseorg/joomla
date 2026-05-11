@@ -74,6 +74,11 @@ abstract class AbstractJoomlaProfiler
                 return;
             }
 
+            if (!$this->shouldSubmitTrace()) {
+                $this->perfbase->reset();
+                return;
+            }
+
             $result = $this->perfbase->submitTrace();
 
             if (!$result->isSuccess()) {
@@ -176,6 +181,11 @@ abstract class AbstractJoomlaProfiler
     protected function resolveAppVersion(): string
     {
         return trim((string) ($this->config['app_version'] ?? ''));
+    }
+
+    protected function shouldSubmitTrace(): bool
+    {
+        return true;
     }
 
     /** @codeCoverageIgnore */

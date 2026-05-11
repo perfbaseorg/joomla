@@ -11,6 +11,13 @@ use PHPUnit\Framework\TestCase;
 
 class PerfbasePluginTest extends TestCase
 {
+    public function test_autoload_language_property_matches_joomla_parent_untyped_property(): void
+    {
+        $property = new \ReflectionProperty(PerfbasePlugin::class, 'autoloadLanguage');
+
+        self::assertFalse($property->hasType());
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
@@ -158,6 +165,143 @@ class PerfbasePluginTest extends TestCase
         self::assertTrue($plugin->getActiveLifecycle()->isStarted());
     }
 
+    public function test_http_request_skips_submission_for_default_disallowed_status_code(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/missing';
+
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->never();
+        $perfbase->shouldReceive('reset')->once();
+
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => true,
+                    'api_key' => 'test-key',
+                    'sample_rate' => 1.0,
+                    'include_http' => '*',
+                ]);
+            }
+        };
+
+        $plugin = new class($dispatcher, [], $resolver, $perfbase) extends PerfbasePlugin {
+            public function injectApplication(object $application): void
+            {
+                $this->application = $application;
+            }
+        };
+
+        $plugin->injectApplication(new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        });
+
+        $plugin->onAfterInitialise();
+        http_response_code(404);
+        $plugin->onAfterRespond();
+
+        self::assertNotNull($plugin->getActiveLifecycle());
+        self::assertSame('404', $plugin->getActiveLifecycle()->getAttributes()['http_status_code']);
+    }
+
+    public function test_http_request_submits_for_default_server_error_status_code(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/error';
+
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->once()->andReturn(\Perfbase\SDK\SubmitResult::success());
+
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => true,
+                    'api_key' => 'test-key',
+                    'sample_rate' => 1.0,
+                    'include_http' => '*',
+                ]);
+            }
+        };
+
+        $plugin = new class($dispatcher, [], $resolver, $perfbase) extends PerfbasePlugin {
+            public function injectApplication(object $application): void
+            {
+                $this->application = $application;
+            }
+        };
+
+        $plugin->injectApplication(new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        });
+
+        $plugin->onAfterInitialise();
+        http_response_code(503);
+        $plugin->onAfterRespond();
+
+        self::assertNotNull($plugin->getActiveLifecycle());
+        self::assertSame('503', $plugin->getActiveLifecycle()->getAttributes()['http_status_code']);
+    }
+
+    public function test_http_request_submits_for_custom_allowed_status_code(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_URI'] = '/missing';
+
+        $dispatcher = Mockery::mock(DispatcherInterface::class);
+        $perfbase = MockFactory::createPerfbase();
+        $perfbase->shouldReceive('startTraceSpan')->once();
+        $perfbase->shouldReceive('stopTraceSpan')->once()->andReturn(true);
+        $perfbase->shouldReceive('submitTrace')->once()->andReturn(\Perfbase\SDK\SubmitResult::success());
+
+        $resolver = new class extends ConfigResolver {
+            public function resolve(array $params = []): array
+            {
+                return parent::resolve([
+                    'enabled' => true,
+                    'api_key' => 'test-key',
+                    'sample_rate' => 1.0,
+                    'profile_http_status_codes' => '200,404',
+                    'include_http' => '*',
+                ]);
+            }
+        };
+
+        $plugin = new class($dispatcher, [], $resolver, $perfbase) extends PerfbasePlugin {
+            public function injectApplication(object $application): void
+            {
+                $this->application = $application;
+            }
+        };
+
+        $plugin->injectApplication(new class {
+            public function isClient(string $name): bool
+            {
+                return $name === 'site';
+            }
+        });
+
+        $plugin->onAfterInitialise();
+        http_response_code(404);
+        $plugin->onAfterRespond();
+
+        self::assertNotNull($plugin->getActiveLifecycle());
+        self::assertSame('404', $plugin->getActiveLifecycle()->getAttributes()['http_status_code']);
+    }
+
     public function test_cli_request_uses_cli_lifecycle_and_shutdown_cleanup(): void
     {
         $_SERVER['argv'] = ['joomla.php', 'cache:clean'];
@@ -203,7 +347,7 @@ class PerfbasePluginTest extends TestCase
         $plugin->onShutdownFallback();
 
         self::assertNotNull($plugin->getActiveLifecycle());
-        self::assertSame('console.cache.clean', $plugin->getActiveLifecycle()->getSpanName());
+        self::assertSame('console_cache_clean', $plugin->getActiveLifecycle()->getSpanName());
     }
 
     public function test_plugin_safely_skips_when_application_is_missing(): void

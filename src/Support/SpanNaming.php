@@ -36,11 +36,11 @@ class SpanNaming
 
         $identifier = $identifier !== '' ? $identifier : 'root';
 
-        return sprintf(
-            'http.%s.%s',
+        return self::normalizeSpanName(sprintf(
+            'http_%s_%s',
             strtoupper($method),
             self::normalizeIdentifier($identifier)
-        );
+        ));
     }
 
     /**
@@ -72,10 +72,10 @@ class SpanNaming
      */
     public static function cliSpanName(array $argv, ?string $applicationName = null): string
     {
-        return sprintf(
-            'console.%s',
+        return self::normalizeSpanName(sprintf(
+            'console_%s',
             self::normalizeIdentifier(self::cliAction($argv, $applicationName))
-        );
+        ));
     }
 
     public static function sanitizePath(string $path): string
@@ -136,9 +136,20 @@ class SpanNaming
     {
         $identifier = strtolower($identifier);
         $identifier = str_replace('{id}', 'id', $identifier);
-        $identifier = preg_replace('/[^a-z0-9]+/', '.', $identifier) ?? 'unknown';
-        $identifier = trim($identifier, '.');
+        $identifier = preg_replace('/[^a-z0-9]+/', '_', $identifier) ?? 'unknown';
+        $identifier = trim($identifier, '_');
 
-        return $identifier !== '' ? $identifier : 'unknown';
+        $identifier = $identifier !== '' ? $identifier : 'unknown';
+
+        return $identifier;
+    }
+
+    private static function normalizeSpanName(string $spanName): string
+    {
+        $spanName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $spanName) ?? 'unknown';
+        $spanName = preg_replace('/_+/', '_', $spanName) ?? 'unknown';
+        $spanName = trim($spanName, '_');
+
+        return substr($spanName !== '' ? $spanName : 'unknown', 0, 64);
     }
 }
