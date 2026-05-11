@@ -17,6 +17,7 @@ class PerfbasePlugin extends CMSPlugin
 {
     use ErrorHandler;
 
+    /** @var bool */
     protected $autoloadLanguage = true;
 
     private ConfigResolver $configResolver;
