@@ -117,24 +117,4 @@ class SpanNaming
         return $segment;
     }
 
-    private static function normalizeIdentifier(string $identifier): string
-    {
-        $identifier = strtolower($identifier);
-        $identifier = str_replace('{id}', 'id', $identifier);
-        $identifier = preg_replace('/[^a-z0-9]+/', '_', $identifier) ?? 'unknown';
-        $identifier = trim($identifier, '_');
-
-        $identifier = $identifier !== '' ? $identifier : 'unknown';
-
-        return $identifier;
-    }
-
-    private static function normalizeSpanName(string $spanName): string
-    {
-        $spanName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $spanName) ?? 'unknown';
-        $spanName = preg_replace('/_+/', '_', $spanName) ?? 'unknown';
-        $spanName = trim($spanName, '_');
-
-        return substr($spanName !== '' ? $spanName : 'unknown', 0, 64);
-    }
 }
