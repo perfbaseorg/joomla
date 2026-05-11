@@ -3,7 +3,6 @@
 namespace Perfbase\Plugin\System\Perfbase\Tests\Unit\Config;
 
 use Perfbase\Plugin\System\Perfbase\Config\ConfigResolver;
-use Perfbase\SDK\FeatureFlags;
 use PHPUnit\Framework\TestCase;
 
 class ManifestConfigContractTest extends TestCase
@@ -54,7 +53,7 @@ class ManifestConfigContractTest extends TestCase
         self::assertSame((string) $defaults['sample_rate'], $fields['sample_rate']);
         self::assertSame((string) $defaults['timeout'], $fields['timeout']);
         self::assertSame('', $fields['proxy']);
-        self::assertSame((string) FeatureFlags::DefaultFlags, $fields['flags']);
+        self::assertSame((string) $defaults['flags'], $fields['flags']);
         self::assertSame('0', $fields['profile_admin']);
         self::assertSame('200-299,500-599', $fields['profile_http_status_codes']);
         self::assertSame([...range(200, 299), ...range(500, 599)], $defaults['profile_http_status_codes']);

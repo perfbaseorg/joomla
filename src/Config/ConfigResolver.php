@@ -7,6 +7,8 @@ use Perfbase\SDK\FeatureFlags;
 
 class ConfigResolver
 {
+    public const DEFAULT_FLAGS = 8145;
+
     /**
      * @param array<string, mixed> $params
      * @return array<string, mixed>
@@ -21,7 +23,7 @@ class ConfigResolver
             'api_url' => trim((string) ($params['api_url'] ?? 'https://ingress.perfbase.cloud')),
             'sample_rate' => $this->clampFloat((float) ($params['sample_rate'] ?? 0.1), 0.0, 1.0),
             'profile_http_status_codes' => $this->parseStatusCodeList($params['profile_http_status_codes'] ?? '200-299,500-599'),
-            'flags' => (int) ($params['flags'] ?? FeatureFlags::DefaultFlags),
+            'flags' => (int) ($params['flags'] ?? self::DEFAULT_FLAGS),
             'timeout' => (int) ($params['timeout'] ?? 5),
             'proxy' => trim((string) ($params['proxy'] ?? '')),
             'environment' => trim((string) ($params['environment'] ?? '')),
@@ -55,7 +57,7 @@ class ConfigResolver
             'api_url' => 'https://ingress.perfbase.cloud',
             'sample_rate' => 0.1,
             'profile_http_status_codes' => [...range(200, 299), ...range(500, 599)],
-            'flags' => FeatureFlags::DefaultFlags,
+            'flags' => self::DEFAULT_FLAGS,
             'timeout' => 5,
             'proxy' => '',
             'environment' => '',
