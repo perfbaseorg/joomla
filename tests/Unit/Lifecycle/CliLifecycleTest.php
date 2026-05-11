@@ -88,7 +88,7 @@ class CliLifecycleTest extends TestCase
         $lifecycle->startProfiling();
 
         self::assertSame('unknown', $lifecycle->getAttributes()['action']);
-        self::assertSame('console_unknown', $lifecycle->getSpanName());
+        self::assertSame('artisan', $lifecycle->getSpanName());
     }
 
     public function test_cli_disabled_or_missing_extension_skips_start(): void

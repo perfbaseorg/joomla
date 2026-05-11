@@ -20,7 +20,7 @@ class SpanNamingTest extends TestCase
         $span = SpanNaming::httpSpanName('POST', null, null, null, '/users/123/orders/550e8400-e29b-41d4-a716-446655440000');
 
         self::assertSame('POST /users/{id}/orders/{id}', $action);
-        self::assertSame('http_POST_users_id_orders_id', $span);
+        self::assertSame('http', $span);
     }
 
     public function test_cli_action_uses_first_non_option_token(): void
@@ -29,7 +29,7 @@ class SpanNamingTest extends TestCase
         $span = SpanNaming::cliSpanName(['joomla.php', '--env=dev', 'cache:clean']);
 
         self::assertSame('cache:clean', $action);
-        self::assertSame('console_cache_clean', $span);
+        self::assertSame('artisan', $span);
     }
 
     public function test_cli_action_falls_back_to_application_name_then_unknown(): void
@@ -45,14 +45,14 @@ class SpanNamingTest extends TestCase
         self::assertSame('/products/{id}', SpanNaming::sanitizePath('/products/abcdefabcdefabcdefabcdef'));
         self::assertSame('/orders/{id}', SpanNaming::sanitizePath('https://example.test//orders///123?foo=bar'));
         self::assertSame('/blog/posts', SpanNaming::sanitizePath('/blog/posts'));
-        self::assertSame('http_GET_root', SpanNaming::httpSpanName('GET', null, null, null, '/'));
+        self::assertSame('http', SpanNaming::httpSpanName('GET', null, null, null, '/'));
     }
 
     public function test_span_names_use_sdk_safe_characters_and_length(): void
     {
         $span = SpanNaming::cliSpanName(['joomla.php', 'very:long command/name with spaces and symbols that should be trimmed']);
 
-        self::assertMatchesRegularExpression('/^[A-Za-z0-9_-]{1,64}$/', $span);
+        self::assertMatchesRegularExpression('/^[A-Za-z]{1,64}$/', $span);
         self::assertLessThanOrEqual(64, strlen($span));
     }
 }

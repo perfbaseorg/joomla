@@ -28,19 +28,7 @@ class SpanNaming
         ?string $task,
         string $path
     ): string {
-        $identifier = self::routeIdentifier($option, $view, $task);
-
-        if ($identifier === '') {
-            $identifier = trim(self::sanitizePath($path), '/');
-        }
-
-        $identifier = $identifier !== '' ? $identifier : 'root';
-
-        return self::normalizeSpanName(sprintf(
-            'http_%s_%s',
-            strtoupper($method),
-            self::normalizeIdentifier($identifier)
-        ));
+        return 'http';
     }
 
     /**
@@ -72,10 +60,7 @@ class SpanNaming
      */
     public static function cliSpanName(array $argv, ?string $applicationName = null): string
     {
-        return self::normalizeSpanName(sprintf(
-            'console_%s',
-            self::normalizeIdentifier(self::cliAction($argv, $applicationName))
-        ));
+        return 'artisan';
     }
 
     public static function sanitizePath(string $path): string

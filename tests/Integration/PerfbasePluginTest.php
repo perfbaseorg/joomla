@@ -347,7 +347,7 @@ class PerfbasePluginTest extends TestCase
         $plugin->onShutdownFallback();
 
         self::assertNotNull($plugin->getActiveLifecycle());
-        self::assertSame('console_cache_clean', $plugin->getActiveLifecycle()->getSpanName());
+        self::assertSame('artisan', $plugin->getActiveLifecycle()->getSpanName());
     }
 
     public function test_plugin_safely_skips_when_application_is_missing(): void
