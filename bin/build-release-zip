@@ -4,20 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MANIFEST="${ROOT_DIR}/perfbase.xml"
 TAG="${1:-}"
-VERSION="$(php -r '$xml = simplexml_load_file($argv[1]); if ($xml === false) { exit(1); } echo (string) $xml->version;' "${MANIFEST}")"
+MANIFEST_VERSION="$(php -r '$xml = simplexml_load_file($argv[1]); if ($xml === false) { exit(1); } echo (string) $xml->version;' "${MANIFEST}")"
 
-if [[ -z "${VERSION}" ]]; then
+if [[ -z "${MANIFEST_VERSION}" ]]; then
   echo "Unable to read version from perfbase.xml" >&2
   exit 1
 fi
 
 if [[ -n "${TAG}" ]]; then
-  TAG_VERSION="${TAG#v}"
-
-  if [[ "${TAG_VERSION}" != "${VERSION}" ]]; then
-    echo "Tag ${TAG} does not match perfbase.xml version ${VERSION}" >&2
-    exit 1
-  fi
+  VERSION="${TAG#v}"
+else
+  VERSION="${MANIFEST_VERSION}"
 fi
 
 BUILD_DIR="${ROOT_DIR}/build/release"
@@ -34,6 +31,21 @@ cp -R "${ROOT_DIR}/services" "${STAGE_DIR}/services"
 cp -R "${ROOT_DIR}/src" "${STAGE_DIR}/src"
 cp -R "${ROOT_DIR}/language" "${STAGE_DIR}/language"
 cp "${ROOT_DIR}/composer.json" "${STAGE_DIR}/composer.json"
+
+php -r '
+$manifestPath = $argv[1];
+$version = $argv[2];
+$xml = simplexml_load_file($manifestPath);
+if ($xml === false) {
+    fwrite(STDERR, "Unable to read staged perfbase.xml\n");
+    exit(1);
+}
+$xml->version = $version;
+if ($xml->asXML($manifestPath) === false) {
+    fwrite(STDERR, "Unable to write staged perfbase.xml\n");
+    exit(1);
+}
+' "${STAGE_DIR}/perfbase.xml" "${VERSION}"
 
 if [[ -f "${ROOT_DIR}/composer.lock" ]]; then
   cp "${ROOT_DIR}/composer.lock" "${STAGE_DIR}/composer.lock"

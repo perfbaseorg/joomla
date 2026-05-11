@@ -57,7 +57,7 @@ jobs:
         run: bin/build-release-zip "$GITHUB_REF_NAME"
 
       - name: Verify release ZIP contents
-        run: bin/verify-release-zip "dist/perfbase-joomla-${RELEASE_VERSION}.zip"
+        run: bin/verify-release-zip "dist/perfbase-joomla-${RELEASE_VERSION}.zip" "$GITHUB_REF_NAME"
 
       - name: Publish GitHub Release artifact
         uses: softprops/action-gh-release@v2
@@ -69,7 +69,7 @@ jobs:
         run: bin/update-joomla-update-metadata "$GITHUB_REF_NAME"
 
       - name: Verify Joomla update metadata
-        run: bin/verify-joomla-update-metadata
+        run: bin/verify-joomla-update-metadata "$GITHUB_REF_NAME"
 
       - name: Commit Joomla update metadata to main
         run: |

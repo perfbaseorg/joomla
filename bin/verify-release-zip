@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ZIP_PATH="${1:-}"
+TAG="${2:-}"
 
 if [[ -z "${ZIP_PATH}" || ! -f "${ZIP_PATH}" ]]; then
-  echo "Usage: bin/verify-release-zip path/to/perfbase-joomla-version.zip" >&2
+  echo "Usage: bin/verify-release-zip path/to/perfbase-joomla-version.zip [vversion]" >&2
   exit 1
 fi
 
@@ -41,6 +42,16 @@ require_entry "language/en-GB/plg_system_perfbase.ini"
 require_entry "vendor/autoload.php"
 require_entry "vendor/perfbase/php-sdk/src/Perfbase.php"
 require_entry "vendor/perfbase/php-sdk/src/FeatureFlags.php"
+
+if [[ -n "${TAG}" ]]; then
+  EXPECTED_VERSION="${TAG#v}"
+  ACTUAL_VERSION="$(unzip -p "${ZIP_PATH}" perfbase.xml | php -r '$xml = simplexml_load_string(stream_get_contents(STDIN)); if ($xml === false) { exit(1); } echo (string) $xml->version;')"
+
+  if [[ "${ACTUAL_VERSION}" != "${EXPECTED_VERSION}" ]]; then
+    echo "ZIP perfbase.xml version ${ACTUAL_VERSION} does not match ${TAG}" >&2
+    exit 1
+  fi
+fi
 
 reject_prefix "tests/"
 reject_prefix ".git/"

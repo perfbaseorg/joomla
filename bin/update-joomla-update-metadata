@@ -23,11 +23,12 @@ if ($version === '') {
 
 if ($tag === '') {
     $tag = 'v' . $version;
+} else {
+    $version = str_starts_with($tag, 'v') ? substr($tag, 1) : $tag;
 }
 
-if (ltrim($tag, 'v') !== $version) {
-    fwrite(STDERR, sprintf("Tag %s does not match perfbase.xml version %s\n", $tag, $version));
-    exit(1);
+if (!str_starts_with($tag, 'v')) {
+    $tag = 'v' . $tag;
 }
 
 $downloadUrl = sprintf(

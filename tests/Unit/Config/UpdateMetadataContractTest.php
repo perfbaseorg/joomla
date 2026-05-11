@@ -16,13 +16,13 @@ class UpdateMetadataContractTest extends TestCase
         self::assertNotFalse($updates);
 
         $update = $updates->update[0];
-        $version = (string) $manifest->version;
+        $version = (string) $update->version;
 
         self::assertSame('Perfbase', (string) $update->name);
         self::assertSame('perfbase', (string) $update->element);
         self::assertSame('plugin', (string) $update->type);
         self::assertSame('system', (string) $update->folder);
-        self::assertSame($version, (string) $update->version);
+        self::assertMatchesRegularExpression('/^\d+\.\d+\.\d+$/', $version);
         self::assertSame('8.1', (string) $update->php_minimum);
         self::assertSame((string) $manifest->targetplatform['name'], (string) $update->targetplatform['name']);
         self::assertSame((string) $manifest->targetplatform['version'], (string) $update->targetplatform['version']);

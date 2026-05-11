@@ -4,6 +4,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$tag = $argv[1] ?? '';
 $manifest = simplexml_load_file($root . '/perfbase.xml');
 $updates = simplexml_load_file($root . '/updates/perfbase.xml');
 
@@ -18,11 +19,17 @@ if ($update === null) {
     exit(1);
 }
 
+$expectedVersion = $tag === '' ? (string) $update->version : (str_starts_with($tag, 'v') ? substr($tag, 1) : $tag);
+if ($expectedVersion === '') {
+    fwrite(STDERR, "Unable to determine update metadata version\n");
+    exit(1);
+}
+
 $expected = [
     'element' => 'perfbase',
     'type' => 'plugin',
     'folder' => 'system',
-    'version' => (string) $manifest->version,
+    'version' => $expectedVersion,
     'php_minimum' => '8.1',
 ];
 
@@ -44,7 +51,7 @@ if ((string) $update->targetplatform['version'] !== (string) $manifest->targetpl
 }
 
 $downloadUrl = (string) $update->downloads->downloadurl;
-$version = (string) $manifest->version;
+$version = $expected['version'];
 $expectedSuffix = sprintf('/releases/download/v%s/perfbase-joomla-%s.zip', $version, $version);
 
 if (!str_ends_with($downloadUrl, $expectedSuffix)) {
