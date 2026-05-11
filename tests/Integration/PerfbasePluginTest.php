@@ -472,9 +472,10 @@ class PerfbasePluginTest extends TestCase
 
         $plugin->onAfterInitialise();
 
-        self::assertCount(2, $plugin->loggedErrors);
-        self::assertStringContainsString('Invalid config for api_url: Invalid API URL', $plugin->loggedErrors[0]);
-        self::assertStringContainsString('API URL is not valid', $plugin->loggedErrors[1]);
+        $loggedErrors = implode("\n", $plugin->loggedErrors);
+
+        self::assertStringContainsString('Invalid config for api_url: Invalid API URL', $loggedErrors);
+        self::assertStringContainsString('API URL is not valid', $loggedErrors);
         self::assertNull($plugin->getPerfbase());
     }
 

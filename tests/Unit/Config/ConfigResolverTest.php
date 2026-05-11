@@ -44,7 +44,7 @@ class ConfigResolverTest extends TestCase
         self::assertSame(['*'], $config['include']['http']);
         self::assertSame(['*'], $config['include']['console']);
         self::assertSame([], $config['exclude']['http']);
-        self::assertSame(FeatureFlags::DefaultFlags, $config['flags']);
+        self::assertSame(ConfigResolver::DEFAULT_FLAGS, $config['flags']);
     }
 
     public function test_resolve_normalizes_profile_http_status_codes(): void
@@ -132,7 +132,7 @@ class ConfigResolverTest extends TestCase
             'api_url' => 'https://ingress.perfbase.cloud',
             'sample_rate' => 0.5,
             'timeout' => 5,
-            'flags' => FeatureFlags::DefaultFlags,
+            'flags' => ConfigResolver::DEFAULT_FLAGS,
             'include' => [
                 'http' => ['/[invalid/'],
                 'console' => [],
