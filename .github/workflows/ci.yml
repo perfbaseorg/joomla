@@ -39,6 +39,9 @@ jobs:
       - name: Run PHPUnit
         run: composer run test
 
+      - name: Run provider autoload smoke test
+        run: php tests/Host/provider-autoload-smoke.php
+
   joomla-framework-smoke:
     name: Joomla framework-package smoke on PHP ${{ matrix.php-versions }} and Joomla ${{ matrix.joomla-versions }}
     runs-on: ubuntu-latest

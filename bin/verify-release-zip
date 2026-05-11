@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ZIP_PATH="${1:-}"
+
+if [[ -z "${ZIP_PATH}" || ! -f "${ZIP_PATH}" ]]; then
+  echo "Usage: bin/verify-release-zip path/to/perfbase-joomla-version.zip" >&2
+  exit 1
+fi
+
+LISTING="$(unzip -Z1 "${ZIP_PATH}")"
+
+require_entry() {
+  local entry="$1"
+  if ! grep -Fxq "${entry}" <<< "${LISTING}"; then
+    echo "Missing required ZIP entry: ${entry}" >&2
+    exit 1
+  fi
+}
+
+reject_prefix() {
+  local prefix="$1"
+  if grep -Eq "^${prefix}" <<< "${LISTING}"; then
+    echo "ZIP contains forbidden entry matching: ${prefix}" >&2
+    exit 1
+  fi
+}
+
+reject_entry() {
+  local entry="$1"
+  if grep -Fxq "${entry}" <<< "${LISTING}"; then
+    echo "ZIP contains forbidden entry: ${entry}" >&2
+    exit 1
+  fi
+}
+
+require_entry "perfbase.xml"
+require_entry "services/provider.php"
+require_entry "src/Extension/PerfbasePlugin.php"
+require_entry "language/en-GB/plg_system_perfbase.ini"
+require_entry "vendor/autoload.php"
+require_entry "vendor/perfbase/php-sdk/src/Perfbase.php"
+require_entry "vendor/perfbase/php-sdk/src/FeatureFlags.php"
+
+reject_prefix "tests/"
+reject_prefix ".git/"
+reject_prefix ".github/"
+reject_prefix "build/"
+reject_prefix "dist/"
+reject_prefix "coverage/"
+reject_prefix "vendor/bin/"
+reject_entry "composer.json"
+reject_entry "composer.lock"
+reject_entry "coverage.xml"
+reject_entry "junit.xml"
+
+if grep -Eq '(^|/)(Dockerfile|docker-compose\.ya?ml|phpunit\.xml|phpstan\.neon|test(_docker)?\.sh|perfbase_extension_stubs\.php|\.dockerignore|\.gitignore|README\.md|composer\.json)$' <<< "${LISTING}"; then
+  echo "ZIP contains development-only vendor metadata or test files." >&2
+  exit 1
+fi
+
+echo "Release ZIP verification passed."

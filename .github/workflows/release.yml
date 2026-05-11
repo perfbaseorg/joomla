@@ -1,0 +1,85 @@
+name: Joomla Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Joomla release ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure tag commit is on main
+        run: |
+          git fetch origin main
+          TAG_COMMIT="$(git rev-list -n 1 "$GITHUB_REF_NAME")"
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "Tag commit $TAG_COMMIT is not reachable from main." >&2
+            exit 1
+          fi
+
+      - name: Set release version
+        run: echo "RELEASE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Set up PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Validate package metadata
+        run: composer validate --no-check-publish
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress src
+
+      - name: Run PHPUnit
+        run: composer run test
+
+      - name: Run provider autoload smoke test
+        run: php tests/Host/provider-autoload-smoke.php
+
+      - name: Build release ZIP
+        run: bin/build-release-zip "$GITHUB_REF_NAME"
+
+      - name: Verify release ZIP contents
+        run: bin/verify-release-zip "dist/perfbase-joomla-${RELEASE_VERSION}.zip"
+
+      - name: Publish GitHub Release artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          fail_on_unmatched_files: true
+
+      - name: Update Joomla update metadata
+        run: bin/update-joomla-update-metadata "$GITHUB_REF_NAME"
+
+      - name: Verify Joomla update metadata
+        run: bin/verify-joomla-update-metadata
+
+      - name: Commit Joomla update metadata to main
+        run: |
+          if git diff --quiet -- updates/perfbase.xml; then
+            echo "Joomla update metadata already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add updates/perfbase.xml
+          git commit -m "Update Joomla update metadata for ${GITHUB_REF_NAME}"
+          git push origin HEAD:main

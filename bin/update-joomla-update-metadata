@@ -1,0 +1,60 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+$manifestPath = $root . '/perfbase.xml';
+$updatesPath = $root . '/updates/perfbase.xml';
+$repository = getenv('GITHUB_REPOSITORY') ?: 'perfbaseorg/joomla';
+$tag = $argv[1] ?? '';
+
+$manifest = simplexml_load_file($manifestPath);
+if ($manifest === false) {
+    fwrite(STDERR, "Unable to read perfbase.xml\n");
+    exit(1);
+}
+
+$version = (string) $manifest->version;
+if ($version === '') {
+    fwrite(STDERR, "Unable to read version from perfbase.xml\n");
+    exit(1);
+}
+
+if ($tag === '') {
+    $tag = 'v' . $version;
+}
+
+if (ltrim($tag, 'v') !== $version) {
+    fwrite(STDERR, sprintf("Tag %s does not match perfbase.xml version %s\n", $tag, $version));
+    exit(1);
+}
+
+$downloadUrl = sprintf(
+    'https://github.com/%s/releases/download/%s/perfbase-joomla-%s.zip',
+    $repository,
+    $tag,
+    $version
+);
+
+$contents = <<<XML
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+    <update>
+        <name>Perfbase</name>
+        <description>Perfbase Joomla system plugin</description>
+        <element>perfbase</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>{$version}</version>
+        <downloads>
+            <downloadurl type="full" format="zip">{$downloadUrl}</downloadurl>
+        </downloads>
+        <targetplatform name="joomla" version="((4\\.4)|(5\\.[0-9]+))" />
+        <php_minimum>8.1</php_minimum>
+    </update>
+</updates>
+XML;
+
+file_put_contents($updatesPath, $contents . PHP_EOL);
+echo $updatesPath . PHP_EOL;

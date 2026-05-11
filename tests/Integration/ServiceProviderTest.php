@@ -53,5 +53,13 @@ class ServiceProviderTest extends TestCase
         self::assertTrue(method_exists($params, 'toArray'));
         self::assertSame(PluginHelper::$plugin['params'], $params->toArray());
     }
-}
 
+    public function test_service_provider_bootstraps_plugin_composer_autoloader(): void
+    {
+        $command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/Host/provider-autoload-smoke.php');
+        exec($command, $output, $exitCode);
+
+        self::assertSame(0, $exitCode, implode("\n", $output));
+        self::assertSame('Provider autoload smoke test passed.', $output[0] ?? '');
+    }
+}

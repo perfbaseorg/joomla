@@ -14,12 +14,17 @@
         <folder plugin="perfbase">services</folder>
         <folder>src</folder>
         <folder>language</folder>
+        <folder>vendor</folder>
     </files>
 
     <languages folder="language">
         <language tag="en-GB">en-GB/plg_system_perfbase.ini</language>
         <language tag="en-GB">en-GB/plg_system_perfbase.sys.ini</language>
     </languages>
+
+    <updateservers>
+        <server type="extension" priority="1" name="Perfbase Joomla Updates">https://raw.githubusercontent.com/perfbaseorg/joomla/main/updates/perfbase.xml</server>
+    </updateservers>
 
     <config>
         <fields name="params">

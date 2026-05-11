@@ -1,0 +1,65 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$root = dirname(__DIR__);
+$manifest = simplexml_load_file($root . '/perfbase.xml');
+$updates = simplexml_load_file($root . '/updates/perfbase.xml');
+
+if ($manifest === false || $updates === false) {
+    fwrite(STDERR, "Unable to read update metadata XML\n");
+    exit(1);
+}
+
+$update = $updates->update[0] ?? null;
+if ($update === null) {
+    fwrite(STDERR, "Missing update entry\n");
+    exit(1);
+}
+
+$expected = [
+    'element' => 'perfbase',
+    'type' => 'plugin',
+    'folder' => 'system',
+    'version' => (string) $manifest->version,
+    'php_minimum' => '8.1',
+];
+
+foreach ($expected as $field => $value) {
+    if ((string) $update->{$field} !== $value) {
+        fwrite(STDERR, sprintf("Unexpected %s: %s\n", $field, (string) $update->{$field}));
+        exit(1);
+    }
+}
+
+if ((string) $update->targetplatform['name'] !== (string) $manifest->targetplatform['name']) {
+    fwrite(STDERR, "Target platform name does not match manifest\n");
+    exit(1);
+}
+
+if ((string) $update->targetplatform['version'] !== (string) $manifest->targetplatform['version']) {
+    fwrite(STDERR, "Target platform version does not match manifest\n");
+    exit(1);
+}
+
+$downloadUrl = (string) $update->downloads->downloadurl;
+$version = (string) $manifest->version;
+$expectedSuffix = sprintf('/releases/download/v%s/perfbase-joomla-%s.zip', $version, $version);
+
+if (!str_ends_with($downloadUrl, $expectedSuffix)) {
+    fwrite(STDERR, sprintf("Unexpected download URL: %s\n", $downloadUrl));
+    exit(1);
+}
+
+if ((string) $update->downloads->downloadurl['type'] !== 'full') {
+    fwrite(STDERR, "Download URL type must be full\n");
+    exit(1);
+}
+
+if ((string) $update->downloads->downloadurl['format'] !== 'zip') {
+    fwrite(STDERR, "Download URL format must be zip\n");
+    exit(1);
+}
+
+echo "Joomla update metadata verification passed.\n";

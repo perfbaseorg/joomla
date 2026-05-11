@@ -43,9 +43,24 @@ class ManifestConfigContractTest extends TestCase
 
         $resolver = new ConfigResolver();
         $defaults = $resolver->getDefaults();
+        $fileFolders = [];
+
+        foreach ($xml->files->folder as $folder) {
+            $fileFolders[] = (string) $folder;
+        }
 
         self::assertSame('joomla', (string) $xml->targetplatform['name']);
         self::assertSame('((4\.4)|(5\.[0-9]+))', (string) $xml->targetplatform['version']);
+        self::assertSame(
+            'https://raw.githubusercontent.com/perfbaseorg/joomla/main/updates/perfbase.xml',
+            (string) $xml->updateservers->server
+        );
+        self::assertSame('extension', (string) $xml->updateservers->server['type']);
+        self::assertSame('Perfbase Joomla Updates', (string) $xml->updateservers->server['name']);
+        self::assertSame(
+            ['services', 'src', 'language', 'vendor'],
+            $fileFolders
+        );
 
         self::assertSame('0', $fields['enabled']);
         self::assertSame('', $fields['api_key']);

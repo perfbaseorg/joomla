@@ -4,6 +4,7 @@ vendor/
 .phpunit.result.cache
 .phpunit.cache/
 build/
+dist/
 coverage/
 coverage.xml
 junit.xml

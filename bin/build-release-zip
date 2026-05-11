@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+MANIFEST="${ROOT_DIR}/perfbase.xml"
+TAG="${1:-}"
+VERSION="$(php -r '$xml = simplexml_load_file($argv[1]); if ($xml === false) { exit(1); } echo (string) $xml->version;' "${MANIFEST}")"
+
+if [[ -z "${VERSION}" ]]; then
+  echo "Unable to read version from perfbase.xml" >&2
+  exit 1
+fi
+
+if [[ -n "${TAG}" ]]; then
+  TAG_VERSION="${TAG#v}"
+
+  if [[ "${TAG_VERSION}" != "${VERSION}" ]]; then
+    echo "Tag ${TAG} does not match perfbase.xml version ${VERSION}" >&2
+    exit 1
+  fi
+fi
+
+BUILD_DIR="${ROOT_DIR}/build/release"
+STAGE_DIR="${BUILD_DIR}/perfbase"
+DIST_DIR="${ROOT_DIR}/dist"
+ZIP_PATH="${DIST_DIR}/perfbase-joomla-${VERSION}.zip"
+
+rm -rf "${STAGE_DIR}"
+mkdir -p "${STAGE_DIR}" "${DIST_DIR}"
+
+cp "${ROOT_DIR}/perfbase.xml" "${STAGE_DIR}/perfbase.xml"
+cp "${ROOT_DIR}/LICENSE.txt" "${STAGE_DIR}/LICENSE.txt"
+cp -R "${ROOT_DIR}/services" "${STAGE_DIR}/services"
+cp -R "${ROOT_DIR}/src" "${STAGE_DIR}/src"
+cp -R "${ROOT_DIR}/language" "${STAGE_DIR}/language"
+cp "${ROOT_DIR}/composer.json" "${STAGE_DIR}/composer.json"
+
+if [[ -f "${ROOT_DIR}/composer.lock" ]]; then
+  cp "${ROOT_DIR}/composer.lock" "${STAGE_DIR}/composer.lock"
+fi
+
+composer install \
+  --working-dir="${STAGE_DIR}" \
+  --no-dev \
+  --prefer-dist \
+  --optimize-autoloader \
+  --no-interaction \
+  --no-progress
+
+rm -f "${STAGE_DIR}/composer.json" "${STAGE_DIR}/composer.lock"
+rm -rf "${STAGE_DIR}/vendor/bin"
+find "${STAGE_DIR}/vendor" -type d \( \
+  -name tests -o \
+  -name Tests -o \
+  -name test -o \
+  -name docs -o \
+  -name doc -o \
+  -name examples -o \
+  -name example -o \
+  -name .github -o \
+  -name .git \
+\) -prune -exec rm -rf {} +
+find "${STAGE_DIR}/vendor" -type f \( \
+  -name Dockerfile -o \
+  -name docker-compose.yml -o \
+  -name docker-compose.yaml -o \
+  -name phpunit.xml -o \
+  -name phpstan.neon -o \
+  -name test.sh -o \
+  -name 'test_*.sh' -o \
+  -name perfbase_extension_stubs.php -o \
+  -name .dockerignore -o \
+  -name .gitignore -o \
+  -name README.md -o \
+  -name composer.json \
+\) -delete
+find "${STAGE_DIR}" -name '.DS_Store' -delete
+
+rm -f "${ZIP_PATH}"
+(
+  cd "${STAGE_DIR}"
+  zip -qr "${ZIP_PATH}" .
+)
+
+echo "${ZIP_PATH}"

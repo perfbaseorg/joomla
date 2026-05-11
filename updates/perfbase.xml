@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+    <update>
+        <name>Perfbase</name>
+        <description>Perfbase Joomla system plugin</description>
+        <element>perfbase</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>1.0.0</version>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/perfbaseorg/joomla/releases/download/v1.0.0/perfbase-joomla-1.0.0.zip</downloadurl>
+        </downloads>
+        <targetplatform name="joomla" version="((4\.4)|(5\.[0-9]+))" />
+        <php_minimum>8.1</php_minimum>
+    </update>
+</updates>

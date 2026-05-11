@@ -56,21 +56,31 @@ This package does not currently provide:
 
 ## Installation
 
-### 1. Install the package into Joomla
+### 1. Download the installable ZIP
 
-Place the package under:
+Download the `perfbase-joomla-<version>.zip` artifact from the matching GitHub Release.
+
+Release ZIPs are self-contained Joomla plugin artifacts. They include the production `perfbase/php-sdk` dependency under the plugin's own `vendor/` directory, so normal Joomla Extension Manager installs do not require a Composer install in the Joomla root.
+
+### 2. Install the ZIP in Joomla
+
+In Joomla administrator, go to:
 
 ```text
-plugins/system/perfbase
+System -> Install -> Extensions -> Upload Package File
 ```
 
-### 2. Install Composer dependencies
+Upload the release ZIP.
 
-From the plugin directory:
+### Updates
 
-```bash
-composer install --no-dev --prefer-dist
+The plugin registers a Joomla update server:
+
+```text
+https://raw.githubusercontent.com/perfbaseorg/joomla/main/updates/perfbase.xml
 ```
+
+After the first ZIP install, Joomla can discover future releases through the administrator extension update UI. Release metadata points Joomla at the matching GitHub Release ZIP.
 
 ### 3. Enable the plugin
 
@@ -84,16 +94,29 @@ System - Perfbase
 
 The plugin depends on the Perfbase PHP extension at runtime. Without the extension, the plugin degrades safely but no traces will be captured.
 
+### Development install
+
+For local development, place the source checkout under:
+
+```text
+plugins/system/perfbase
+```
+
+Then install dependencies from the plugin directory:
+
+```bash
+composer install --no-dev --prefer-dist
+```
+
 ## Quick Start
 
 1. Install and enable the Perfbase PHP extension.
-2. Install this package under `plugins/system/perfbase`.
-3. Run `composer install --no-dev --prefer-dist`.
-4. Enable `System - Perfbase` in Joomla administrator.
-5. Configure `api_key`.
-6. Set `enabled = yes`.
-7. Start with `sample_rate = 0.1`.
-8. Leave `profile_admin = no` until you want administrator coverage explicitly.
+2. Install the release ZIP through Joomla Extension Manager.
+3. Enable `System - Perfbase` in Joomla administrator.
+4. Configure `api_key`.
+5. Set `enabled = yes`.
+6. Start with `sample_rate = 0.1`.
+7. Leave `profile_admin = no` until you want administrator coverage explicitly.
 
 ## Configuration
 
@@ -109,7 +132,7 @@ The plugin configuration UI is defined in [`perfbase.xml`](/Users/ben/Projects/P
 | `sample_rate` | `0.1` | Fraction of requests and commands to profile |
 | `timeout` | `5` | SDK request timeout in seconds |
 | `proxy` | empty | Optional proxy URL |
-| `flags` | `FeatureFlags::DefaultFlags` | Perfbase feature-flag bitmask |
+| `flags` | `8145` | Curated Perfbase feature-flag bitmask |
 
 ### Context Settings
 
@@ -190,7 +213,7 @@ CLI spans are derived from the first non-option command token in `$_SERVER['argv
 
 Example:
 
-- `cache:clean` -> `console.cache.clean`
+- `cache:clean` -> `console_cache_clean`
 
 ## Captured Attributes
 
@@ -260,6 +283,7 @@ CI coverage includes:
 - PHPStan
 - Joomla framework-package smoke checks for the supported `4.4` and `5.x` dependency lines
 - both HTTP and CLI smoke paths via [`tests/Host/joomla-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/joomla-smoke.php)
+- provider autoload coverage via [`tests/Host/provider-autoload-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/provider-autoload-smoke.php)
 - local CMS stubs layered on top of `joomla/di` and `joomla/event`
 
 The smoke job is not a full `joomla/cms` application install. It validates adapter compatibility against the supported Joomla framework-package lines plus local CMS stubs.
@@ -269,6 +293,17 @@ Commands used during development:
 ```bash
 composer run test
 ./vendor/bin/phpstan analyse --memory-limit=2G --debug src
+```
+
+Release artifacts are built automatically when a `v<semver>` tag is pushed on a commit reachable from `main`. The release workflow checks that the tag version matches `perfbase.xml`, builds `dist/perfbase-joomla-<version>.zip`, verifies the ZIP contents, attaches it to the GitHub Release, and commits updated Joomla update metadata to `updates/perfbase.xml` on `main`.
+
+To build the same ZIP locally:
+
+```bash
+bin/build-release-zip v1.0.0
+bin/verify-release-zip dist/perfbase-joomla-1.0.0.zip
+bin/update-joomla-update-metadata v1.0.0
+bin/verify-joomla-update-metadata
 ```
 
 In this sandbox, `composer run phpstan` may fail because PHPStan tries to open a local TCP worker socket. The direct command above was used for the clean static-analysis run.
@@ -285,6 +320,7 @@ Important files:
 
 - [`perfbase.xml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/perfbase.xml)
 - [`services/provider.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/services/provider.php)
+- [`updates/perfbase.xml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/updates/perfbase.xml)
 - [`ConfigResolver.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Config/ConfigResolver.php)
 - [`PerfbasePlugin.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Extension/PerfbasePlugin.php)
 - [`tests/`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests)
