@@ -347,7 +347,7 @@ class PerfbasePluginTest extends TestCase
         $plugin->onShutdownFallback();
 
         self::assertNotNull($plugin->getActiveLifecycle());
-        self::assertSame('artisan', $plugin->getActiveLifecycle()->getSpanName());
+        self::assertSame('cli', $plugin->getActiveLifecycle()->getSpanName());
     }
 
     public function test_plugin_safely_skips_when_application_is_missing(): void
@@ -602,12 +602,16 @@ class PerfbasePluginTest extends TestCase
         );
 
         $method = new \ReflectionMethod(PerfbasePlugin::class, 'registerShutdownFallback');
-        $method->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $method->setAccessible(true);
+        }
         $method->invoke($plugin);
         $method->invoke($plugin);
 
         $property = new \ReflectionProperty(PerfbasePlugin::class, 'shutdownRegistered');
-        $property->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true);
+        }
 
         self::assertTrue($property->getValue($plugin));
     }

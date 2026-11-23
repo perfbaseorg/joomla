@@ -50,7 +50,7 @@ class ManifestConfigContractTest extends TestCase
         }
 
         self::assertSame('joomla', (string) $xml->targetplatform['name']);
-        self::assertSame('((4\.4)|(5\.[0-9]+))', (string) $xml->targetplatform['version']);
+        self::assertSame('((4\.4)|([56]\.[0-9]+))', (string) $xml->targetplatform['version']);
         self::assertSame(
             'https://raw.githubusercontent.com/perfbaseorg/joomla/main/updates/perfbase.xml',
             (string) $xml->updateservers->server

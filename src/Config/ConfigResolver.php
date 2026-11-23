@@ -7,7 +7,19 @@ use Perfbase\SDK\FeatureFlags;
 
 class ConfigResolver
 {
-    public const DEFAULT_FLAGS = 8145;
+    public const DEFAULT_FLAGS = FeatureFlags::DefaultFlags;
+
+    /**
+     * The `flags` default shipped before 1.5.0. It predates the extension's
+     * current flag set (it sets reserved bits that never had any effect and
+     * leaves out HTTP, cache, mail, file and process tracking), so sites still
+     * on it are moved to the current default.
+     */
+    public const LEGACY_DEFAULT_FLAGS = 8145;
+
+    public const DEFAULT_API_URL = 'https://ingress.perfbase.cloud';
+
+    public const DEFAULT_TIMEOUT = 5;
 
     /**
      * @param array<string, mixed> $params
@@ -20,11 +32,11 @@ class ConfigResolver
             'debug' => $this->toBool($params['debug'] ?? null, false),
             'log_errors' => $this->toBool($params['log_errors'] ?? null, true),
             'api_key' => trim((string) ($params['api_key'] ?? '')),
-            'api_url' => trim((string) ($params['api_url'] ?? 'https://ingress.perfbase.cloud')),
+            'api_url' => $this->toString($params['api_url'] ?? null, self::DEFAULT_API_URL),
             'sample_rate' => $this->clampFloat((float) ($params['sample_rate'] ?? 0.1), 0.0, 1.0),
             'profile_http_status_codes' => $this->parseStatusCodeList($params['profile_http_status_codes'] ?? '200-299,500-599'),
-            'flags' => (int) ($params['flags'] ?? self::DEFAULT_FLAGS),
-            'timeout' => (int) ($params['timeout'] ?? 5),
+            'flags' => $this->resolveFlags($params['flags'] ?? null),
+            'timeout' => $this->toPositiveInt($params['timeout'] ?? null, self::DEFAULT_TIMEOUT),
             'proxy' => trim((string) ($params['proxy'] ?? '')),
             'environment' => trim((string) ($params['environment'] ?? '')),
             'app_version' => trim((string) ($params['app_version'] ?? '')),
@@ -54,11 +66,11 @@ class ConfigResolver
             'debug' => false,
             'log_errors' => true,
             'api_key' => '',
-            'api_url' => 'https://ingress.perfbase.cloud',
+            'api_url' => self::DEFAULT_API_URL,
             'sample_rate' => 0.1,
             'profile_http_status_codes' => [...range(200, 299), ...range(500, 599)],
             'flags' => self::DEFAULT_FLAGS,
-            'timeout' => 5,
+            'timeout' => self::DEFAULT_TIMEOUT,
             'proxy' => '',
             'environment' => '',
             'app_version' => '',
@@ -117,7 +129,7 @@ class ConfigResolver
 
         $flags = (int) ($config['flags'] ?? 0);
 
-        if ($flags < 0 || $flags > FeatureFlags::AllFlags) {
+        if ($flags < 0 || ($flags & ~FeatureFlags::ValidFlagsMask) !== 0) {
             $errors['flags'] = 'Invalid flags value';
         }
 
@@ -162,13 +174,68 @@ class ConfigResolver
      */
     public function buildSdkConfig(array $config): Config
     {
+        $flags = (int) $config['flags'];
+        $proxy = trim((string) $config['proxy']);
+
         return Config::fromArray([
-            'api_key' => (string) $config['api_key'],
+            'api_key' => trim((string) $config['api_key']),
             'api_url' => (string) $config['api_url'],
-            'flags' => (int) $config['flags'],
+            'flags' => $flags >= 0 ? $flags & FeatureFlags::ValidFlagsMask : self::DEFAULT_FLAGS,
             'timeout' => (int) $config['timeout'],
-            'proxy' => trim((string) $config['proxy']) !== '' ? (string) $config['proxy'] : null,
+            'proxy' => $proxy !== '' ? $proxy : null,
         ]);
+    }
+
+    /**
+     * Admin form values arrive as strings and may be blank.
+     *
+     * @param mixed $value
+     */
+    private function resolveFlags($value): int
+    {
+        if (is_int($value)) {
+            $flags = $value;
+        } elseif (is_string($value) && preg_match('/^\s*\d+\s*$/', $value) === 1) {
+            $flags = (int) trim($value);
+        } else {
+            return self::DEFAULT_FLAGS;
+        }
+
+        if ($flags === self::LEGACY_DEFAULT_FLAGS) {
+            return self::DEFAULT_FLAGS;
+        }
+
+        return $flags;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function toPositiveInt($value, int $default): int
+    {
+        if (is_int($value)) {
+            return $value > 0 ? $value : $default;
+        }
+
+        if (is_string($value) && preg_match('/^\s*\d+\s*$/', $value) === 1 && (int) trim($value) > 0) {
+            return (int) trim($value);
+        }
+
+        return $default;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function toString($value, string $default): string
+    {
+        if (!is_string($value) && !is_int($value) && !is_float($value)) {
+            return $default;
+        }
+
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : $default;
     }
 
     /**

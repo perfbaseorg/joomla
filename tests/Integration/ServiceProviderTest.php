@@ -43,11 +43,15 @@ class ServiceProviderTest extends TestCase
         self::assertInstanceOf(PerfbasePlugin::class, $plugin);
 
         $applicationProperty = new \ReflectionProperty(\Joomla\CMS\Plugin\CMSPlugin::class, 'application');
-        $applicationProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $applicationProperty->setAccessible(true);
+        }
         self::assertSame($application, $applicationProperty->getValue($plugin));
 
         $paramsProperty = new \ReflectionProperty(\Joomla\CMS\Plugin\CMSPlugin::class, 'params');
-        $paramsProperty->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $paramsProperty->setAccessible(true);
+        }
         $params = $paramsProperty->getValue($plugin);
 
         self::assertTrue(method_exists($params, 'toArray'));

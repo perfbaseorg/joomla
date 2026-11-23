@@ -22,12 +22,12 @@
     }
   ],
   "require": {
-    "php": ">=8.1 <9.0",
+    "php": ">=8.1 <8.7",
     "ext-json": "*",
-    "perfbase/php-sdk": "^1.0.0"
+    "perfbase/php-sdk": "^1.9"
   },
   "suggest": {
-    "joomla/cms": "Required at runtime when the plugin is installed into a Joomla 4.4 or 5.x application."
+    "joomla/cms": "Required at runtime when the plugin is installed into a Joomla 4.4, 5.x or 6.x application."
   },
   "require-dev": {
     "mockery/mockery": "^1.6",
@@ -47,7 +47,8 @@
   "scripts": {
     "lint": "composer run-script phpstan && composer run-script test",
     "phpstan": "phpstan analyse --memory-limit=2G",
-    "test": "phpunit --coverage-text"
+    "test": "phpunit",
+    "test:coverage": "phpunit --coverage-text"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,

@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.1']
+        php-versions: ['8.1', '8.3', '8.5', '8.6']
 
     steps:
       - name: Checkout code
@@ -24,7 +24,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          coverage: pcov
+          coverage: none
           tools: composer:v2
 
       - name: Install dependencies
@@ -53,8 +53,16 @@ jobs:
         include:
           - php-versions: '8.1'
             joomla-versions: '^4.4'
+            framework-versions: '^2.0'
           - php-versions: '8.1'
             joomla-versions: '^5.0'
+            framework-versions: '^3.0'
+          - php-versions: '8.3'
+            joomla-versions: '^6.0'
+            framework-versions: '^4.0'
+          - php-versions: '8.6'
+            joomla-versions: '^6.0'
+            framework-versions: '^4.0'
 
     steps:
       - name: Checkout code
@@ -75,8 +83,8 @@ jobs:
           mkdir -p /tmp/joomla-host
           composer init --working-dir=/tmp/joomla-host --name=perfbase/joomla-host --no-interaction
           composer require --working-dir=/tmp/joomla-host --no-interaction --prefer-dist \
-            joomla/di:"${{ matrix.joomla-versions == '^4.4' && '^2.0' || '^3.0' }}" \
-            joomla/event:"${{ matrix.joomla-versions == '^4.4' && '^2.0' || '^3.0' }}"
+            joomla/di:"${{ matrix.framework-versions }}" \
+            joomla/event:"${{ matrix.framework-versions }}"
           cp stubs/joomla-cms.stub.php /tmp/joomla-host/joomla-cms-stubs.php
           cd /tmp/joomla-host && php -r '
             $json = json_decode(file_get_contents("composer.json"), true);

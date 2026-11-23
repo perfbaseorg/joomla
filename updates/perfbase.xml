@@ -10,7 +10,7 @@
         <downloads>
             <downloadurl type="full" format="zip">https://github.com/perfbaseorg/joomla/releases/download/v1.4.1/perfbase-joomla-1.4.1.zip</downloadurl>
         </downloads>
-        <targetplatform name="joomla" version="((4\.4)|(5\.[0-9]+))" />
+        <targetplatform name="joomla" version="((4\.4)|([56]\.[0-9]+))" />
         <php_minimum>8.1</php_minimum>
     </update>
 </updates>

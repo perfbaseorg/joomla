@@ -60,7 +60,7 @@ class SpanNaming
      */
     public static function cliSpanName(array $argv, ?string $applicationName = null): string
     {
-        return 'artisan';
+        return 'cli';
     }
 
     public static function sanitizePath(string $path): string

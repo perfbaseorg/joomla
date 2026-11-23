@@ -29,7 +29,7 @@ class SpanNamingTest extends TestCase
         $span = SpanNaming::cliSpanName(['joomla.php', '--env=dev', 'cache:clean']);
 
         self::assertSame('cache:clean', $action);
-        self::assertSame('artisan', $span);
+        self::assertSame('cli', $span);
     }
 
     public function test_cli_action_falls_back_to_application_name_then_unknown(): void

@@ -14,7 +14,7 @@
   <a href="https://github.com/perfbaseorg/joomla/blob/main/LICENSE.txt"><img src="https://img.shields.io/packagist/l/perfbase/joomla" alt="License"></a>
   <a href="https://github.com/perfbaseorg/joomla/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/perfbaseorg/joomla/ci.yml?branch=main" alt="CI"></a>
   <img src="https://img.shields.io/badge/php-8.1%2B-blue" alt="PHP Version">
-  <img src="https://img.shields.io/badge/joomla-4.4--5.x-blue" alt="Joomla Version">
+  <img src="https://img.shields.io/badge/joomla-4.4--6.x-blue" alt="Joomla Version">
 </p>
 
 This package is a thin adapter over [`perfbase/php-sdk`](https://packagist.org/packages/perfbase/php-sdk). It connects Joomla request and console lifecycle events to the Perfbase SDK while leaving extension interaction, payload construction, and submission to the shared SDK.
@@ -23,11 +23,11 @@ This package is a thin adapter over [`perfbase/php-sdk`](https://packagist.org/p
 
 | Component | Supported |
 |-----------|-----------|
-| PHP | `>=8.1 <9.0` |
-| Joomla | `4.4` and `5.x` |
+| PHP | `>=8.1 <8.7` (Joomla 6 itself requires PHP 8.3+) |
+| Joomla | `4.4`, `5.x` and `6.x` |
 | Package type | Joomla system plugin |
 | Runtime contexts | HTTP and CLI |
-| Perfbase SDK | `^1.0.0` |
+| Perfbase SDK | `^1.9` |
 | Perfbase PHP extension | Required at runtime |
 
 This package supports:
@@ -35,7 +35,7 @@ This package supports:
 - Site requests
 - Administrator requests when `profile_admin` is enabled
 - Joomla API requests as standard HTTP contexts
-- Joomla console commands
+- CLI applications that trigger `onAfterInitialise` (Joomla's own console application does not; see [CLI](#cli))
 
 This package does not currently provide:
 
@@ -46,9 +46,9 @@ This package does not currently provide:
 ## Features
 
 - HTTP profiling via Joomla lifecycle hooks
-- CLI profiling for Joomla console commands
+- CLI profiling for applications that trigger `onAfterInitialise`
 - Low-cardinality action and span naming
-- Sanitized HTTP URLs without query strings
+- Full HTTP URLs with credential-looking query values redacted
 - Include and exclude filters for HTTP and CLI
 - Production-safe failure handling
 - Shutdown fallback cleanup for interrupted execution paths
@@ -120,7 +120,7 @@ composer install --no-dev --prefer-dist
 
 ## Configuration
 
-The plugin configuration UI is defined in [`perfbase.xml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/perfbase.xml). Runtime normalization and validation live in [`ConfigResolver.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Config/ConfigResolver.php).
+The plugin configuration UI is defined in [`perfbase.xml`](./perfbase.xml). Runtime normalization and validation live in [`ConfigResolver.php`](./src/Config/ConfigResolver.php).
 
 ### Core Settings
 
@@ -132,7 +132,7 @@ The plugin configuration UI is defined in [`perfbase.xml`](/Users/ben/Projects/P
 | `sample_rate` | `0.1` | Fraction of requests and commands to profile |
 | `timeout` | `5` | SDK request timeout in seconds |
 | `proxy` | empty | Optional proxy URL |
-| `flags` | `8145` | Curated Perfbase feature-flag bitmask |
+| `flags` | `16775265` | Perfbase feature-flag bitmask; defaults to the SDK's `FeatureFlags::DefaultFlags` (see [Feature Flags](#feature-flags)) |
 
 ### Context Settings
 
@@ -181,6 +181,33 @@ database:*
 
 Filters are matched against normalized identifiers rather than raw query-heavy URLs.
 
+### Feature Flags
+
+`flags` is a bitmask passed to the SDK and the Perfbase extension. The default, `16775265` (`FeatureFlags::DefaultFlags`), enables every feature except per-function CPU time and memory allocation tracking. Sites still on the old default, `8145`, are treated as the current default.
+
+| Flag | Value | Notes |
+|---|---:|---|
+| `UsePreciseClock` | `1` | Opt-in. High-resolution wall timing on hosts without a fast default clock |
+| `TrackCpuTime` | `4` | Opt-in. Per-function CPU time (adds a syscall per call) |
+| `TrackMemoryAllocation` | `8` | Per-function memory allocation |
+| `TrackExceptions` | `32` | Exception throws |
+| `TrackFileCompilation` | `64` | `include` / `require` compilation |
+| `TrackPdo` | `2048` | PDO, mysqli and legacy mysql queries |
+| `TrackMongodb` | `4096` | MongoDB operations |
+| `TrackElasticsearch` | `8192` | Elasticsearch operations |
+| `TrackCaches` | `16384` | Redis and Memcached |
+| `TrackHttp` | `32768` | Outbound HTTP (cURL, Guzzle) |
+| `TrackMail` | `65536` | `mail()` calls |
+| `TrackFileOperations` | `131072` | File I/O |
+| `TrackProc` | `262144` | Process execution and the sleep family |
+| `TrackProcessList` | `524288` | Process-list snapshot at trace end |
+| `TrackErrors` | `1048576` | PHP errors, warnings and notices |
+| `TrackMagicMethods` | `2097152` | Magic method call counts |
+| `TrackOpcache` | `4194304` | OPcache statistics |
+| `TrackStreams` | `8388608` | Stream errors (PHP 8.6+, inert before) |
+
+`0`, or a mask containing only opt-in flags, means "every feature except the opt-in flags" plus any opt-in flags set. Any mask containing a regular flag enables exactly those features. Blank or non-numeric `flags` and `timeout` values fall back to their defaults, and a blank `api_url` falls back to `https://ingress.perfbase.cloud`.
+
 `profile_http_status_codes` accepts comma-separated values, newline-separated values, and ranges such as `200-299,500-599` or `200,201,404`. The runtime config is normalized to an integer allowlist. Leave it blank if you want to disable HTTP trace submission entirely.
 
 ## Runtime Behavior
@@ -209,11 +236,14 @@ By default, 2xx and 5xx HTTP responses are submitted. A 404 will still be profil
 
 ### CLI
 
-CLI spans are derived from the first non-option command token in `$_SERVER['argv']`.
+CLI profiling starts from `onAfterInitialise` when the application reports the `cli` client. Joomla's `cli/joomla.php` console application does not trigger `onAfterInitialise` (it dispatches the framework's `application.*` and `console.*` events instead), so Joomla console commands are not currently traced.
+
+CLI actions are derived from the first non-option command token in `$_SERVER['argv']`.
+Each CLI trace uses the stable span name `cli`. Earlier releases named this span `artisan`.
 
 Example:
 
-- `cache:clean` -> `console_cache_clean`
+- `cache:clean` -> `action=cache:clean`
 
 ## Captured Attributes
 
@@ -239,7 +269,8 @@ Example:
 
 Notes:
 
-- `http_url` excludes the query string
+- `http_url` is the full request URL including the query string, passed through the SDK's `UrlSanitizer`: values of credential-looking parameters (`token`, `password`, `api_key`, `signature`, `nonce`, session IDs, `email`, and similar) are replaced with `REDACTED`, user info and fragments are dropped, and Joomla CSRF form tokens (sent as a 32-character hex parameter name) are redacted
+- `action` never contains the query string
 - `action` is low-cardinality by design
 - administrator requests are excluded unless `profile_admin` is enabled
 
@@ -256,8 +287,9 @@ Notes:
 ## Operational Notes
 
 - If the SDK cannot be initialized, the plugin fails open and does not break the host application.
+- Submission failures, including a `PerfbaseException` thrown by `submitTrace()`, are caught and logged; they never reach the application.
 - If the Perfbase extension is unavailable, the plugin no-ops safely.
-- Invalid adapter config is validated at boot and logged in production mode.
+- When profiling is enabled with an API key, invalid adapter config is validated at boot and logged in production mode.
 - In production, profiling errors are logged only when `log_errors` is enabled.
 - In development, set `debug = yes` if you want profiling errors to surface immediately.
 
@@ -267,23 +299,14 @@ Current package verification:
 
 - PHPUnit: passing
 - PHPStan: passing on `src/`
-- Overall line coverage: `99.52%`
-- Overall method coverage: `98.55%`
-
-Key class coverage:
-
-- [`PerfbasePlugin.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Extension/PerfbasePlugin.php): `100%` methods, `100%` lines
-- [`HttpRequestLifecycle.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Lifecycle/HttpRequestLifecycle.php): `100%` methods, `100%` lines
-- [`SpanNaming.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Support/SpanNaming.php): `100%` methods, `100%` lines
-
 CI coverage includes:
 
-- the supported PHP baseline
+- PHP `8.1`, `8.3`, `8.5` and `8.6`
 - PHPUnit
 - PHPStan
-- Joomla framework-package smoke checks for the supported `4.4` and `5.x` dependency lines
-- both HTTP and CLI smoke paths via [`tests/Host/joomla-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/joomla-smoke.php)
-- provider autoload coverage via [`tests/Host/provider-autoload-smoke.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests/Host/provider-autoload-smoke.php)
+- Joomla framework-package smoke checks for the supported `4.4`, `5.x` and `6.x` dependency lines (`joomla/di` and `joomla/event` `2.x`, `3.x` and `4.x`)
+- both HTTP and CLI smoke paths via [`tests/Host/joomla-smoke.php`](./tests/Host/joomla-smoke.php)
+- provider autoload coverage via [`tests/Host/provider-autoload-smoke.php`](./tests/Host/provider-autoload-smoke.php)
 - local CMS stubs layered on top of `joomla/di` and `joomla/event`
 
 The smoke job is not a full `joomla/cms` application install. It validates adapter compatibility against the supported Joomla framework-package lines plus local CMS stubs.
@@ -292,10 +315,11 @@ Commands used during development:
 
 ```bash
 composer run test
+composer run test:coverage   # needs pcov or Xdebug
 ./vendor/bin/phpstan analyse --memory-limit=2G --debug src
 ```
 
-Release artifacts are built automatically when a `v<semver>` tag is pushed on a commit reachable from `main`. The release workflow checks that the tag version matches `perfbase.xml`, builds `dist/perfbase-joomla-<version>.zip`, verifies the ZIP contents, attaches it to the GitHub Release, and commits updated Joomla update metadata to `updates/perfbase.xml` on `main`.
+Release artifacts are built automatically when a `v<semver>` tag is pushed on a commit reachable from `main`. The release workflow stamps the staged ZIP manifest from the tag version, builds `dist/perfbase-joomla-<version>.zip`, verifies the ZIP contents against the tag, attaches it to the GitHub Release, and commits updated Joomla update metadata to `updates/perfbase.xml` on `main`.
 
 To build the same ZIP locally:
 
@@ -305,8 +329,6 @@ bin/verify-release-zip dist/perfbase-joomla-1.0.0.zip
 bin/update-joomla-update-metadata v1.0.0
 bin/verify-joomla-update-metadata
 ```
-
-In this sandbox, `composer run phpstan` may fail because PHPStan tries to open a local TCP worker socket. The direct command above was used for the clean static-analysis run.
 
 ## Development
 
@@ -318,13 +340,13 @@ composer run test
 
 Important files:
 
-- [`perfbase.xml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/perfbase.xml)
-- [`services/provider.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/services/provider.php)
-- [`updates/perfbase.xml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/updates/perfbase.xml)
-- [`ConfigResolver.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Config/ConfigResolver.php)
-- [`PerfbasePlugin.php`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/src/Extension/PerfbasePlugin.php)
-- [`tests/`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/tests)
-- [`ci.yml`](/Users/ben/Projects/Perfbase/environment/projects/lib-joomla/.github/workflows/ci.yml)
+- [`perfbase.xml`](./perfbase.xml)
+- [`services/provider.php`](./services/provider.php)
+- [`updates/perfbase.xml`](./updates/perfbase.xml)
+- [`ConfigResolver.php`](./src/Config/ConfigResolver.php)
+- [`PerfbasePlugin.php`](./src/Extension/PerfbasePlugin.php)
+- [`tests/`](./tests)
+- [`ci.yml`](./.github/workflows/ci.yml)
 
 ## Documentation
 

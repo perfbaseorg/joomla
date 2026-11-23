@@ -306,7 +306,7 @@ class HttpRequestLifecycleTest extends TestCase
 
         self::assertTrue($lifecycle->isStarted());
         self::assertSame('GET /products/{id}', $lifecycle->getAttributes()['action']);
-        self::assertSame('https://secure.example.test/products/{id}', $lifecycle->getAttributes()['http_url']);
+        self::assertSame('https://secure.example.test/products/123?foo=bar', $lifecycle->getAttributes()['http_url']);
         self::assertSame('', $lifecycle->getAttributes()['user_id']);
         self::assertSame('json', $lifecycle->getAttributes()['joomla.format']);
     }
@@ -437,6 +437,6 @@ class HttpRequestLifecycleTest extends TestCase
 
         $lifecycle->startProfiling();
 
-        self::assertSame('/orders/{id}', $lifecycle->getAttributes()['http_url']);
+        self::assertSame('/orders/123?foo=bar', $lifecycle->getAttributes()['http_url']);
     }
 }

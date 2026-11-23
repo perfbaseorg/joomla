@@ -123,7 +123,7 @@ if ($plugin->getActiveLifecycle() === null || !$plugin->getActiveLifecycle()->is
     throw new RuntimeException('PerfbasePlugin did not start under Joomla host packages.');
 }
 
-if ($mode === 'cli' && $plugin->getActiveLifecycle()->getSpanName() !== 'artisan') {
+if ($mode === 'cli' && $plugin->getActiveLifecycle()->getSpanName() !== 'cli') {
     throw new RuntimeException('CLI host smoke test did not resolve the expected console span name.');
 }
 

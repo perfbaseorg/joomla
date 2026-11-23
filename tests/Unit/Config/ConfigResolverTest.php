@@ -110,7 +110,7 @@ class ConfigResolverTest extends TestCase
             'sample_rate' => 1.5,
             'profile_http_status_codes' => [99, 600],
             'timeout' => 0,
-            'flags' => FeatureFlags::AllFlags + 1,
+            'flags' => 1 << 30,
         ]);
 
         self::assertArrayHasKey('api_key', $errors);
@@ -170,7 +170,9 @@ class ConfigResolverTest extends TestCase
     private function readSdkConfigValue(object $sdkConfig, string $property): mixed
     {
         $reflection = new \ReflectionProperty($sdkConfig, $property);
-        $reflection->setAccessible(true);
+        if (PHP_VERSION_ID < 80100) {
+            $reflection->setAccessible(true);
+        }
 
         return $reflection->getValue($sdkConfig);
     }

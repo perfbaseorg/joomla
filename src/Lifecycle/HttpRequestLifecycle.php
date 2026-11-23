@@ -6,6 +6,7 @@ use Perfbase\Plugin\System\Perfbase\Support\FilterMatcher;
 use Perfbase\Plugin\System\Perfbase\Support\SpanNaming;
 use Perfbase\SDK\Perfbase;
 use Perfbase\SDK\Utils\EnvironmentUtils;
+use Perfbase\SDK\Utils\UrlSanitizer;
 
 class HttpRequestLifecycle extends AbstractJoomlaProfiler
 {
@@ -171,16 +172,50 @@ class HttpRequestLifecycle extends AbstractJoomlaProfiler
         return method_exists($this->application, 'isClient') && $this->application->isClient('administrator');
     }
 
+    /**
+     * Full request URL, including the query string.
+     *
+     * The query string often identifies the operation (`?option=com_ajax&...`),
+     * so it is kept; the SDK redacts credential-looking parameter values.
+     * Joomla's CSRF form token travels as a parameter *name* (`&<32 hex>=1`),
+     * which the SDK cannot recognise, so it is redacted here first.
+     */
     private function buildSanitizedUrl(): string
     {
-        $host = $this->sanitizeHost((string) ($_SERVER['HTTP_HOST'] ?? ''));
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+        $path = parse_url($requestUri, PHP_URL_PATH);
+        $path = is_string($path) && $path !== '' ? $path : '/';
+        $query = parse_url($requestUri, PHP_URL_QUERY);
 
-        if ($host !== '') {
-            return sprintf('%s://%s%s', $scheme, $host, $this->path);
+        $url = $path;
+
+        if (is_string($query) && $query !== '') {
+            $url .= '?' . $this->redactFormTokenParameters($query);
         }
 
-        return $this->path;
+        $host = $this->sanitizeHost((string) ($_SERVER['HTTP_HOST'] ?? ''));
+
+        if ($host !== '') {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $url = sprintf('%s://%s%s', $scheme, $host, $url);
+        }
+
+        return UrlSanitizer::sanitize($url);
+    }
+
+    private function redactFormTokenParameters(string $query): string
+    {
+        $pairs = explode('&', $query);
+
+        foreach ($pairs as $index => $pair) {
+            $name = explode('=', $pair, 2)[0];
+
+            if (preg_match('/^[0-9a-f]{32}$/i', rawurldecode($name)) === 1) {
+                $pairs[$index] = UrlSanitizer::REDACTED . '=' . UrlSanitizer::REDACTED;
+            }
+        }
+
+        return implode('&', $pairs);
     }
 
     private function resolveUserId(): string
